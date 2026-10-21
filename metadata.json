@@ -1,0 +1,6 @@
+{
+  "name": "Currency Counter",
+  "description": "An offline mobile currency and cash denomination counter supporting global banknotes and coins with real-time totals and breakdown.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

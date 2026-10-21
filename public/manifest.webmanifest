@@ -1,0 +1,45 @@
+{
+  "id": "/",
+  "name": "Currency Counter",
+  "short_name": "CashCounter",
+  "description": "Offline mobile currency & cash denomination counter for banknotes and coins worldwide.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": [
+    "standalone",
+    "window-controls-overlay",
+    "minimal-ui"
+  ],
+  "orientation": "portrait",
+  "theme_color": "#047857",
+  "background_color": "#f5f5f4",
+  "prefer_related_applications": false,
+  "categories": ["finance", "utilities", "business"],
+  "icons": [
+    {
+      "src": "/app-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192-maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="128" fill="#10b981"/>
+  <rect x="76" y="140" width="360" height="210" rx="20" fill="#047857" stroke="#ffffff" stroke-width="14"/>
+  <!-- Note inner borders -->
+  <rect x="96" y="160" width="320" height="170" rx="12" fill="#065f46" stroke="#a7f3d0" stroke-width="4" stroke-dasharray="8 6"/>
+  <!-- Inner Note Emblem -->
+  <circle cx="256" cy="245" r="46" fill="#047857" stroke="#a7f3d0" stroke-width="6"/>
+  <text x="256" y="260" font-size="44" font-family="system-ui, -apple-system, sans-serif" font-weight="900" fill="#ffffff" text-anchor="middle">₹$€</text>
+  <!-- Decorative corner circles -->
+  <circle cx="120" cy="184" r="14" fill="#a7f3d0" opacity="0.8"/>
+  <circle cx="392" cy="184" r="14" fill="#a7f3d0" opacity="0.8"/>
+  <circle cx="120" cy="306" r="14" fill="#a7f3d0" opacity="0.8"/>
+  <circle cx="392" cy="306" r="14" fill="#a7f3d0" opacity="0.8"/>
+  <!-- Coin overlapping bottom right -->
+  <circle cx="370" cy="360" r="70" fill="#f59e0b" stroke="#ffffff" stroke-width="12"/>
+  <circle cx="370" cy="360" r="54" fill="#d97706" stroke="#fde68a" stroke-width="4"/>
+  <text x="370" y="380" font-size="52" font-family="system-ui, -apple-system, sans-serif" font-weight="900" fill="#ffffff" text-anchor="middle">¢</text>
+</svg>
