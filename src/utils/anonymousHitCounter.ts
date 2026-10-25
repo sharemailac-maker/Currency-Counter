@@ -1,28 +1,26 @@
 /**
- * Anonymous User & Visit Hit Counter.
- * Strict Privacy Policy:
+ * Anonymous Online User Count.
+ * Strict Privacy:
  * - NO personal data is collected or transmitted.
- * - NO user identifiers, IP addresses, cookies, or device fingerprinting.
- * - Only records raw anonymous hit increments whenever users visit the app.
+ * - Counts only when user gets online.
+ * - No device visit counters or identifiers.
  */
 
 const STORAGE_KEY_CACHED_HITS = 'cc_cached_total_hits';
-const STORAGE_KEY_DEVICE_VISITS = 'cc_anonymous_device_visits';
-const STORAGE_KEY_LAST_VISIT = 'cc_anonymous_last_visit';
 const SESSION_KEY_COUNTED = 'cc_session_counted';
+
+let onlineListenerAttached = false;
 
 export interface AnonymousHitStats {
   totalHits: number;
-  deviceVisits: number;
-  lastVisit: string | null;
   isOnline: boolean;
 }
 
 /**
- * Returns the currently cached hit statistics from localStorage.
+ * Returns the currently cached hit count from localStorage.
  */
 export function getCachedHitStats(): AnonymousHitStats {
-  let cachedTotal = 1248;
+  let cachedTotal = 1253;
   try {
     const saved = localStorage.getItem(STORAGE_KEY_CACHED_HITS);
     if (saved) {
@@ -33,54 +31,38 @@ export function getCachedHitStats(): AnonymousHitStats {
     // LocalStorage unavailable
   }
 
-  let deviceVisits = 1;
-  try {
-    const savedVisits = localStorage.getItem(STORAGE_KEY_DEVICE_VISITS);
-    if (savedVisits) {
-      const num = parseInt(savedVisits, 10);
-      if (!isNaN(num) && num > 0) deviceVisits = num;
-    }
-  } catch {
-    // LocalStorage unavailable
-  }
-
-  let lastVisit: string | null = null;
-  try {
-    lastVisit = localStorage.getItem(STORAGE_KEY_LAST_VISIT);
-  } catch {
-    // Ignore
-  }
-
   return {
     totalHits: cachedTotal,
-    deviceVisits,
-    lastVisit,
     isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
   };
 }
 
 /**
- * Records an anonymous hit for the current session/visit.
- * Purely increments an aggregate counter; zero personal information collected.
+ * Counts user ONLY when online.
+ * If offline, waits until user gets online to register the count.
  */
 export async function recordAnonymousVisit(): Promise<AnonymousHitStats> {
-  const nowStr = new Date().toISOString();
-  let deviceVisits = 1;
+  const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : false;
 
-  try {
-    const prevVisits = parseInt(localStorage.getItem(STORAGE_KEY_DEVICE_VISITS) || '0', 10);
-    deviceVisits = isNaN(prevVisits) ? 1 : prevVisits + 1;
-    localStorage.setItem(STORAGE_KEY_DEVICE_VISITS, String(deviceVisits));
-    localStorage.setItem(STORAGE_KEY_LAST_VISIT, nowStr);
-  } catch {
-    // Ignore
+  // If user is currently offline, attach one-time online listener
+  if (!isOnline) {
+    if (typeof window !== 'undefined' && !onlineListenerAttached) {
+      onlineListenerAttached = true;
+      window.addEventListener(
+        'online',
+        () => {
+          recordAnonymousVisit();
+        },
+        { once: true }
+      );
+    }
+    return getCachedHitStats();
   }
 
-  // Check if session has already pinged the hit counter to prevent duplicate refreshes
+  // Check if session was already counted to avoid multiple increments on fast re-renders
   let alreadySessionCounted = false;
   try {
     alreadySessionCounted = Boolean(sessionStorage.getItem(SESSION_KEY_COUNTED));
-    sessionStorage.setItem(SESSION_KEY_COUNTED, 'true');
   } catch {
     // Ignore
   }
@@ -88,12 +70,11 @@ export async function recordAnonymousVisit(): Promise<AnonymousHitStats> {
   let totalHits = getCachedHitStats().totalHits;
 
   try {
-    // Call server to record anonymous hit (or just fetch if already counted this session)
     const method = alreadySessionCounted ? 'GET' : 'POST';
     const res = await fetch('/api/hits', {
       method,
       headers: {
-        'Accept': 'application/json',
+        Accept: 'application/json',
       },
     });
 
@@ -102,6 +83,7 @@ export async function recordAnonymousVisit(): Promise<AnonymousHitStats> {
       if (typeof data.totalHits === 'number') {
         totalHits = data.totalHits;
         try {
+          sessionStorage.setItem(SESSION_KEY_COUNTED, 'true');
           localStorage.setItem(STORAGE_KEY_CACHED_HITS, String(totalHits));
         } catch {
           // Ignore
@@ -109,48 +91,47 @@ export async function recordAnonymousVisit(): Promise<AnonymousHitStats> {
       }
     }
   } catch {
-    // Network offline; local count is preserved
+    // Network offline; cached value preserved
   }
 
   return {
     totalHits,
-    deviceVisits,
-    lastVisit: nowStr,
-    isOnline: typeof navigator !== 'undefined' ? navigator.onLine : false,
+    isOnline: true,
   };
 }
 
 /**
- * Fetches the latest global hit count from the server without incrementing.
+ * Fetches the latest global user count from the server without incrementing.
  */
 export async function fetchLatestHitCount(): Promise<AnonymousHitStats> {
   let totalHits = getCachedHitStats().totalHits;
-  const current = getCachedHitStats();
+  const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : false;
 
-  try {
-    const res = await fetch('/api/hits', {
-      method: 'GET',
-      headers: { 'Accept': 'application/json' },
-    });
+  if (isOnline) {
+    try {
+      const res = await fetch('/api/hits', {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+      });
 
-    if (res.ok) {
-      const data = await res.json();
-      if (typeof data.totalHits === 'number') {
-        totalHits = data.totalHits;
-        try {
-          localStorage.setItem(STORAGE_KEY_CACHED_HITS, String(totalHits));
-        } catch {
-          // Ignore
+      if (res.ok) {
+        const data = await res.json();
+        if (typeof data.totalHits === 'number') {
+          totalHits = data.totalHits;
+          try {
+            localStorage.setItem(STORAGE_KEY_CACHED_HITS, String(totalHits));
+          } catch {
+            // Ignore
+          }
         }
       }
+    } catch {
+      // Fails silently if offline
     }
-  } catch {
-    // Fails silently if offline
   }
 
   return {
-    ...current,
     totalHits,
-    isOnline: typeof navigator !== 'undefined' ? navigator.onLine : false,
+    isOnline,
   };
 }

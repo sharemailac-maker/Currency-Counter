@@ -24,6 +24,8 @@ import { usePWAInstall } from './hooks/usePWAInstall';
 import { initAnalytics, trackScreenView } from './utils/analytics';
 import { recordAnonymousVisit } from './utils/anonymousHitCounter';
 import { getCompanyMode, setCompanyMode } from './utils/companyMode';
+import { ActiveCalculatorType } from './types';
+import { getActiveCalculator } from './utils/calculatorSettings';
 
 const STORAGE_KEY_COUNTRY = 'currency_counter_country_id';
 const STORAGE_KEY_COUNTS = 'currency_counter_counts_v1';
@@ -32,6 +34,9 @@ const STORAGE_KEY_TALLIES = 'currency_counter_saved_tallies_v1';
 const STORAGE_KEY_SOUND = 'currency_counter_sound_v1';
 
 export default function App() {
+  // Active Financial Calculator (FD, SIP, RD, Loan EMI)
+  const [activeCalculator, setActiveCalculator] = useState<ActiveCalculatorType>(getActiveCalculator);
+
   // Company/Firm mode toggle state
   const [companyModeEnabled, setCompanyModeEnabled] = useState<boolean>(getCompanyMode);
 
@@ -622,7 +627,7 @@ export default function App() {
         </div>
       )}
 
-      {/* TAB 4: CONVERSION (Currency Converter with Custom User Rate & Fee/Cost Options) */}
+      {/* TAB 4: CONVERSION (Currency Converter & Financial Calculators) */}
       {currentTab === 'conversion' && (
         <div className="flex-1 pb-16">
           <ConversionView
@@ -630,11 +635,13 @@ export default function App() {
             allCountries={COUNTRIES}
             counterTotalAmount={totalAmount}
             onNavigateToCounter={() => setCurrentTab('counter')}
+            activeCalculator={activeCalculator}
+            onNavigateToSettings={() => setCurrentTab('settings')}
           />
         </div>
       )}
 
-      {/* TAB 5: SETTINGS (Audio feedback, custom denominations manager, data backup/import) */}
+      {/* TAB 5: SETTINGS (Audio feedback, custom denominations, financial calculator selection, backup) */}
       {currentTab === 'settings' && (
         <div className="flex-1 pb-16">
           <SettingsView
@@ -649,8 +656,8 @@ export default function App() {
             onImportTallies={(imported) => setSavedTallies((prev) => [...imported, ...prev])}
             onClearAllTallies={handleClearAllTallies}
             onResetActiveCounter={handleReset}
-            companyModeEnabled={companyModeEnabled}
-            onToggleCompanyMode={handleToggleCompanyMode}
+            activeCalculator={activeCalculator}
+            onCalculatorChanged={setActiveCalculator}
           />
         </div>
       )}

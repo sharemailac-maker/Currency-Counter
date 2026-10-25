@@ -84,3 +84,6 @@ export interface MasterEmployee {
   phone?: string;
   email?: string;
 }
+
+export type FinancialCalculatorType = 'fd' | 'sip' | 'rd' | 'loan_emi';
+export type ActiveCalculatorType = 'none' | FinancialCalculatorType;

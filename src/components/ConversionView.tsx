@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { CountryCurrency } from '../types';
+import { CountryCurrency, ActiveCalculatorType } from '../types';
 import { 
   ArrowLeftRight, 
   Percent, 
@@ -12,16 +12,22 @@ import {
   Receipt,
   Info,
   ArrowDown,
-  Printer
+  Printer,
+  PiggyBank,
+  TrendingUp,
+  CalendarClock
 } from 'lucide-react';
 import { formatCurrencyAmount } from '../utils/formatters';
 import { copyToClipboard } from '../utils/clipboard';
+import { FinancialCalculators } from './FinancialCalculators';
 
 interface ConversionViewProps {
   currentCountry: CountryCurrency;
   allCountries: CountryCurrency[];
   counterTotalAmount: number;
   onNavigateToCounter?: () => void;
+  activeCalculator?: ActiveCalculatorType;
+  onNavigateToSettings?: () => void;
 }
 
 export const ConversionView: React.FC<ConversionViewProps> = ({
@@ -29,7 +35,12 @@ export const ConversionView: React.FC<ConversionViewProps> = ({
   allCountries,
   counterTotalAmount,
   onNavigateToCounter,
+  activeCalculator = 'none',
+  onNavigateToSettings,
 }) => {
+  // Tab switcher when a calculator is enabled from settings
+  const [activeSubTab, setActiveSubTab] = useState<'converter' | 'calculator'>('converter');
+
   // Base (From) and Target (To) countries
   const [fromCountryId, setFromCountryId] = useState<string>(currentCountry.id);
   const [toCountryId, setToCountryId] = useState<string>(() => {
@@ -581,24 +592,73 @@ export const ConversionView: React.FC<ConversionViewProps> = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Left Column: Input Settings */}
+      {/* Sub-Tabs: When a Financial Calculator (FD / SIP / RD / Loan EMI) is enabled from Settings */}
+      {activeCalculator !== 'none' && (
+        <div className="flex items-center gap-2 mb-4 p-1.5 rounded-2xl bg-stone-100 dark:bg-stone-800/80 border border-stone-200 dark:border-stone-700/80">
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('converter')}
+            className={`flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
+              activeSubTab === 'converter'
+                ? 'bg-white dark:bg-stone-900 text-stone-900 dark:text-white shadow-xs border border-stone-200/60 dark:border-stone-700/60'
+                : 'text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200'
+            }`}
+          >
+            <ArrowLeftRight className="w-4 h-4 text-emerald-600" />
+            <span>Currency Converter</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('calculator')}
+            className={`flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
+              activeSubTab === 'calculator'
+                ? 'bg-white dark:bg-stone-900 text-emerald-700 dark:text-emerald-300 shadow-xs border border-stone-200/60 dark:border-stone-700/60'
+                : 'text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200'
+            }`}
+          >
+            {activeCalculator === 'fd' && <PiggyBank className="w-4 h-4 text-emerald-600" />}
+            {activeCalculator === 'sip' && <TrendingUp className="w-4 h-4 text-emerald-600" />}
+            {activeCalculator === 'rd' && <CalendarClock className="w-4 h-4 text-emerald-600" />}
+            {activeCalculator === 'loan_emi' && <Calculator className="w-4 h-4 text-emerald-600" />}
+            <span>
+              {activeCalculator === 'fd' && 'Fixed Deposit (FD)'}
+              {activeCalculator === 'sip' && 'SIP Calculator'}
+              {activeCalculator === 'rd' && 'Recurring Deposit (RD)'}
+              {activeCalculator === 'loan_emi' && 'Loan EMI Calculator'}
+            </span>
+          </button>
+        </div>
+      )}
+
+      {/* RENDER ACTIVE FINANCIAL CALCULATOR */}
+      {activeCalculator !== 'none' && activeSubTab === 'calculator' ? (
+        <FinancialCalculators
+          activeCalculator={activeCalculator}
+          currentCountry={currentCountry}
+          counterTotalAmount={counterTotalAmount}
+        />
+      ) : (
+        /* RENDER STANDARD CURRENCY CONVERTER */
         <div className="space-y-4">
-          {/* Currencies Selection */}
-          <div className="p-4 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-xs space-y-3">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider">
-                Select Currencies (Alphabetical)
-              </label>
-              <button
-                onClick={handleSwap}
-                className="px-2.5 py-1 rounded-lg border border-stone-200 dark:border-stone-700 text-xs font-semibold text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 transition flex items-center gap-1"
-                title="Swap From and To currencies"
-              >
-                <ArrowLeftRight className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Swap</span>
-              </button>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Left Column: Input Settings */}
+            <div className="space-y-4">
+              {/* Currencies Selection */}
+              <div className="p-4 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider">
+                    Select Currencies (Alphabetical)
+                  </label>
+                  <button
+                    onClick={handleSwap}
+                    className="px-2.5 py-1 rounded-lg border border-stone-200 dark:border-stone-700 text-xs font-semibold text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 transition flex items-center gap-1"
+                    title="Swap From and To currencies"
+                  >
+                    <ArrowLeftRight className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Swap</span>
+                  </button>
+                </div>
 
             <div className="space-y-2">
               {/* From Currency */}
@@ -1064,8 +1124,27 @@ export const ConversionView: React.FC<ConversionViewProps> = ({
               </p>
             </div>
           </div>
+
+          {/* Quick link to enable financial calculators if none active */}
+          {activeCalculator === 'none' && onNavigateToSettings && (
+            <div className="p-3.5 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-800/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
+              <div className="flex items-center gap-2 text-stone-700 dark:text-stone-300">
+                <Calculator className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Need <strong>Fixed Deposit (FD)</strong>, <strong>SIP</strong>, <strong>Recurring Deposit (RD)</strong>, or <strong>Loan EMI</strong> calculators?</span>
+              </div>
+              <button
+                type="button"
+                onClick={onNavigateToSettings}
+                className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shrink-0 transition self-start sm:self-auto cursor-pointer"
+              >
+                Enable in Settings
+              </button>
+            </div>
+          )}
         </div>
       </div>
+      </div>
+      )}
     </div>
   );
 };
