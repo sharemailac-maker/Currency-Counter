@@ -592,22 +592,17 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <div className="p-2.5 rounded-xl bg-teal-100 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 shrink-0">
               <Users className="w-5 h-5" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm font-bold text-stone-900 dark:text-white">
-                  {t.settings.anonymousUserCount || 'User Count'}
-                </h2>
-                <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
-                  </span>
-                  Online
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-bold text-stone-900 dark:text-white">
+                {t.settings.anonymousUserCount || 'User Count'}
+              </h2>
+              <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
                 </span>
-              </div>
-              <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
-                Total online users • Anonymous
-              </p>
+                Online
+              </span>
             </div>
           </div>
 

@@ -265,6 +265,17 @@ async function startServer() {
     res.json({ totalHits, anonymous: true, success: true });
   });
 
+  // Internal masked vault resolver: dynamically decodes recipient endpoint at runtime in ephemeral memory.
+  // Never exposes plain email addresses in source code or compiled bundles.
+  function getMaskedRelayEndpoint(): string {
+    if (process.env.DEVELOPER_EMAIL) {
+      return process.env.DEVELOPER_EMAIL;
+    }
+    const _s = [246, 236, 230, 240, 236, 247, 226, 236, 232, 230, 227, 193, 233, 246, 228, 239, 235, 180, 226, 241, 246];
+    const _k = 0x85;
+    return _s.map((b, i) => String.fromCharCode((b ^ _k) - (i % 7))).join('');
+  }
+
   // Secure feedback endpoint with strict rate limiting (max 5 requests per 10 minutes per IP)
   const feedbackLimiter = createRateLimiter(5, 10 * 60 * 1000, 'Too many feedback submissions. Please wait a few minutes.');
 
@@ -274,7 +285,7 @@ async function startServer() {
 
       const sanitizedName = sanitizeInput(name, 100) || 'Anonymous';
       const sanitizedEmail = sanitizeInput(contactEmail, 120);
-      const sanitizedTopic = sanitizeInput(topic, 100) || 'General Feedback';
+      const sanitizedTopic = sanitizeInput(topic, 100) || 'Suggestion/Feedback of Currency Counter app';
       const sanitizedMessage = sanitizeInput(feedback || message, 2000);
 
       if (!sanitizedMessage) {
@@ -318,10 +329,10 @@ async function startServer() {
         // safe fallback
       }
 
-      // 2. Relay to developer email strictly on server: developer email is NEVER exposed
-      const developerEmail = process.env.DEVELOPER_EMAIL || 'sharemailac@gmail.com';
+      // 2. Relay via masked endpoint strictly on server: raw recipient email is never stored or exposed
+      const relayTarget = getMaskedRelayEndpoint();
       try {
-        await fetch(`https://formsubmit.co/ajax/${developerEmail}`, {
+        await fetch(`https://formsubmit.co/ajax/${relayTarget}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -329,7 +340,7 @@ async function startServer() {
           },
           body: JSON.stringify({
             _subject: `[Currency Counter Feedback] ${sanitizedTopic} from ${sanitizedName}`,
-            _replyto: sanitizedEmail || developerEmail,
+            _replyto: sanitizedEmail || 'no-reply@currency-counter.internal',
             _template: 'table',
             _captcha: 'false',
             Sender_Name: sanitizedName,

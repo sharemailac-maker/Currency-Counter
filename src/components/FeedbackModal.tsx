@@ -21,9 +21,11 @@ const STORAGE_KEY_FEEDBACK_QUEUE = 'offline_feedback_queue';
 // Secure server-side proxy endpoint: developer email and API credentials are kept 100% on the server
 const SECURE_FEEDBACK_ENDPOINT = '/api/feedback';
 
+const FIXED_FEEDBACK_TOPIC = 'Suggestion/Feedback of Currency Counter app';
+
 export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose }) => {
   const [name, setName] = useState('');
-  const [topic, setTopic] = useState('Suggestion / Feature Request');
+  const topic = FIXED_FEEDBACK_TOPIC;
   const [contactEmail, setContactEmail] = useState('');
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -252,23 +254,18 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
                   />
                 </div>
 
-                {/* Topic */}
+                {/* Topic (Fixed to Suggestion/Feedback of Currency Counter app) */}
                 <div>
                   <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1">
-                    Topic / Category
+                    Topic
                   </label>
-                  <select
-                    id="select-feedback-modal-topic"
-                    value={topic}
-                    onChange={(e) => setTopic(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-xs text-stone-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  <div
+                    id="fixed-feedback-modal-topic"
+                    className="w-full px-3 py-2 rounded-xl bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-xs font-semibold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5 shadow-2xs"
                   >
-                    <option value="Suggestion / Feature Request">Suggestion / Feature Request</option>
-                    <option value="Thank You / Appreciation">Thank You / Appreciation</option>
-                    <option value="New Currency or Denomination Request">New Currency / Denomination Request</option>
-                    <option value="Bug Report or Issue">Bug Report or Issue</option>
-                    <option value="General Feedback">General Feedback</option>
-                  </select>
+                    <MessageSquare className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span className="truncate">{FIXED_FEEDBACK_TOPIC}</span>
+                  </div>
                 </div>
               </div>
 
