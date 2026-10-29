@@ -1,23 +1,23 @@
 import { ActiveCalculatorType, FinancialCalculatorType } from '../types';
 
-export const STORAGE_KEY_CALCULATOR_ENABLED = 'cc_calculator_enabled_v2';
-export const STORAGE_KEY_SELECTED_CALCULATOR = 'cc_selected_calculator_v2';
+export const STORAGE_KEY_CALCULATOR_ENABLED = 'cc_calculator_enabled_v3';
+export const STORAGE_KEY_SELECTED_CALCULATOR = 'cc_selected_calculator_v3';
 export const LEGACY_STORAGE_KEY_CALCULATOR = 'cc_active_conversion_calculator';
 
+/**
+ * Returns true if other calculators are enabled.
+ * DEFAULT IS ENABLED. Can be disabled or re-enabled by the user anytime from Settings.
+ */
 export function isCalculatorEnabled(): boolean {
   try {
     const val = localStorage.getItem(STORAGE_KEY_CALCULATOR_ENABLED);
     if (val !== null) {
       return val === 'true';
     }
-    // Check legacy key
-    const legacy = localStorage.getItem(LEGACY_STORAGE_KEY_CALCULATOR);
-    if (legacy && legacy !== 'none') {
-      return true;
-    }
-    return false;
+    // Default is ENABLED
+    return true;
   } catch {
-    return false;
+    return true;
   }
 }
 
@@ -40,7 +40,6 @@ export function getSelectedCalculator(): FinancialCalculatorType {
     if (val === 'fd' || val === 'sip' || val === 'rd' || val === 'loan_emi') {
       return val;
     }
-    // Check legacy key
     const legacy = localStorage.getItem(LEGACY_STORAGE_KEY_CALCULATOR);
     if (legacy === 'fd' || legacy === 'sip' || legacy === 'rd' || legacy === 'loan_emi') {
       return legacy;
