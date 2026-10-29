@@ -26,6 +26,7 @@ import { recordAnonymousVisit } from './utils/anonymousHitCounter';
 import { getCompanyMode, setCompanyMode } from './utils/companyMode';
 import { ActiveCalculatorType } from './types';
 import { getActiveCalculator } from './utils/calculatorSettings';
+import { safeJsonParse } from './utils/security';
 
 const STORAGE_KEY_COUNTRY = 'currency_counter_country_id';
 const STORAGE_KEY_COUNTS = 'currency_counter_counts_v1';
@@ -108,34 +109,29 @@ export default function App() {
     return saved !== null ? saved === 'true' : true;
   });
 
-  // 2. Custom Denominations added by user
+  // 2. Custom Denominations added by user (Hardened against tampering)
   const [customDenominations, setCustomDenominations] = useState<Record<string, Denomination[]>>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY_CUSTOM_DENOMS);
-      return saved ? JSON.parse(saved) : {};
-    } catch {
-      return {};
-    }
+    return safeJsonParse<Record<string, Denomination[]>>(
+      localStorage.getItem(STORAGE_KEY_CUSTOM_DENOMS),
+      {}
+    );
   });
 
   // 3. Counts for denominations (stored per country id)
   const [allCountryCounts, setAllCountryCounts] = useState<Record<string, DenominationCounts>>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY_COUNTS);
-      return saved ? JSON.parse(saved) : {};
-    } catch {
-      return {};
-    }
+    return safeJsonParse<Record<string, DenominationCounts>>(
+      localStorage.getItem(STORAGE_KEY_COUNTS),
+      {}
+    );
   });
 
   // 4. Saved Tallies History (Date, Month, and Multi-Year organized)
   const [savedTallies, setSavedTallies] = useState<SavedTally[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY_TALLIES);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
+    return safeJsonParse<SavedTally[]>(
+      localStorage.getItem(STORAGE_KEY_TALLIES),
+      [],
+      (data) => Array.isArray(data)
+    );
   });
 
   // Filter Tabs in Counter: 'all' | 'notes' | 'coins'

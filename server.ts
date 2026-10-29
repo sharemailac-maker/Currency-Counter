@@ -7,7 +7,7 @@ import { GoogleGenAI } from '@google/genai';
 const PORT = 3000;
 const HOST = '0.0.0.0';
 
-// In-memory rate limiting map: IP -> { count, resetTime }
+// In-memory rate limiting map: Normalized IP -> { count, resetTime }
 interface RateLimitRecord {
   count: number;
   resetTime: number;
@@ -25,16 +25,31 @@ setInterval(() => {
 }, 5 * 60 * 1000);
 
 /**
- * Rate limiting middleware to prevent bot spam, credential stuffing, and DDoS abuse
+ * Extracts and normalizes client IP securely
+ */
+function getClientIp(req: Request): string {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (typeof forwarded === 'string') {
+    const first = forwarded.split(',')[0]?.trim();
+    if (first && /^[0-9a-fA-F:.]+$/.test(first)) {
+      return first.slice(0, 45);
+    }
+  }
+  const remote = req.socket.remoteAddress || '127.0.0.1';
+  return remote.slice(0, 45);
+}
+
+/**
+ * Rate limiting middleware to prevent bot brute force, DoS, and spam attacks
  */
 function createRateLimiter(maxRequests: number, windowMs: number, errorMessage = 'Too many requests. Please try again later.') {
   return (req: Request, res: Response, next: NextFunction): void => {
-    const rawIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown-client';
+    const clientIp = getClientIp(req);
     const now = Date.now();
-    const record = rateLimitStore.get(rawIp);
+    const record = rateLimitStore.get(clientIp);
 
     if (!record || now > record.resetTime) {
-      rateLimitStore.set(rawIp, { count: 1, resetTime: now + windowMs });
+      rateLimitStore.set(clientIp, { count: 1, resetTime: now + windowMs });
       next();
       return;
     }
@@ -55,15 +70,36 @@ function createRateLimiter(maxRequests: number, windowMs: number, errorMessage =
 }
 
 /**
- * Sanitizes input strings by removing potentially dangerous HTML/script tags
+ * Deep sanitization to neutralize Prototype Pollution vectors (__proto__, constructor, prototype)
  */
-function sanitizeInput(val: unknown): string {
+function cleanObjectPrototypes<T>(input: T): T {
+  if (input === null || typeof input !== 'object') {
+    return input;
+  }
+  if (Array.isArray(input)) {
+    return input.map(cleanObjectPrototypes) as unknown as T;
+  }
+  const clean: Record<string, unknown> = {};
+  for (const key of Object.keys(input as Record<string, unknown>)) {
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+      continue;
+    }
+    clean[key] = cleanObjectPrototypes((input as Record<string, unknown>)[key]);
+  }
+  return clean as T;
+}
+
+/**
+ * Strips script tags, HTML tags, and null bytes to prevent injection
+ */
+function sanitizeInput(val: unknown, maxLength = 2000): string {
   if (typeof val !== 'string') return '';
   return val
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
     .replace(/[<>]/g, '')
+    .replace(/\0/g, '')
     .trim()
-    .slice(0, 2000);
+    .slice(0, maxLength);
 }
 
 // Lazy initialization for Gemini AI SDK: Never crashes if key is missing, never exposes key to browser
@@ -87,7 +123,7 @@ async function startServer() {
 
   // 2. Strict Security Headers & CSP
   app.use((req: Request, res: Response, next: NextFunction) => {
-    // Content Security Policy: Protect against XSS, script injection, and rogue outbound requests
+    // Content Security Policy: Protect against XSS while allowing embedding in AI Studio preview
     res.setHeader(
       'Content-Security-Policy',
       "default-src 'self'; " +
@@ -96,16 +132,14 @@ async function startServer() {
       "font-src 'self' data: https://fonts.gstatic.com; " +
       "img-src 'self' data: blob: https://www.google-analytics.com https://*.google-analytics.com; " +
       "connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com; " +
-      "frame-ancestors 'self' https://ai.studio https://*.google.com; " +
+      "frame-ancestors 'self' https://ai.studio https://*.google.com https://*.googleusercontent.com https://*.run.app; " +
       "object-src 'none'; " +
-      "base-uri 'self';"
+      "base-uri 'self'; " +
+      "form-action 'self';"
     );
 
     // Prevent MIME type sniffing
     res.setHeader('X-Content-Type-Options', 'nosniff');
-
-    // Clickjacking protection: only allow same origin and AI Studio embedding
-    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
 
     // Cross-site scripting filter
     res.setHeader('X-XSS-Protection', '1; mode=block');
@@ -119,25 +153,50 @@ async function startServer() {
     next();
   });
 
-  // 3. Block unauthorized access to sensitive system/environment files
+  // 3. Robust Anti-Path-Traversal & System File Protection Middleware
   app.use((req: Request, res: Response, next: NextFunction) => {
-    const rawPath = req.path.toLowerCase();
-    if (
-      rawPath.startsWith('/.env') ||
-      rawPath.startsWith('/.git') ||
-      rawPath.includes('package.json') ||
-      rawPath.includes('tsconfig.json') ||
-      rawPath.includes('metadata.json') ||
-      rawPath.includes('bun.lock')
-    ) {
-      res.status(403).json({ error: 'Access denied to protected system files' });
+    let decodedPath = '';
+    try {
+      decodedPath = decodeURIComponent(req.path).toLowerCase();
+    } catch {
+      res.status(400).json({ error: 'Malformed request path' });
       return;
     }
+
+    // Block path traversal and null-byte injection
+    if (decodedPath.includes('\0') || decodedPath.includes('..') || decodedPath.includes('\\')) {
+      res.status(403).json({ error: 'Access denied: Invalid path sequence' });
+      return;
+    }
+
+    // Block direct access to secrets, environment files, private server data, and git metadata
+    // (Note: Do NOT block /src/* or Vite modules which are required in development)
+    if (
+      decodedPath.startsWith('/.env') ||
+      decodedPath.startsWith('/.git') ||
+      decodedPath.startsWith('/data/') ||
+      decodedPath === '/data' ||
+      decodedPath === '/server.ts' ||
+      decodedPath === '/dist/server.cjs' ||
+      decodedPath.includes('bun.lock')
+    ) {
+      res.status(403).json({ error: 'Access denied to protected server resources' });
+      return;
+    }
+
     next();
   });
 
-  // 4. Body parsing with strict payload size limit to prevent memory exhaustion DoS
-  app.use(express.json({ limit: '50kb' }));
+  // 4. Body parsing with strict payload size limit (30kb) to prevent memory exhaustion DoS
+  app.use(express.json({ limit: '30kb' }));
+
+  // 5. Prototype pollution neutralization middleware for incoming JSON payloads
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    if (req.body && typeof req.body === 'object') {
+      req.body = cleanObjectPrototypes(req.body);
+    }
+    next();
+  });
 
   // ============================================================================
   // SECURE SERVER-SIDE API ROUTES (All secrets kept safely on server)
@@ -175,7 +234,7 @@ async function startServer() {
         }
       }
     } catch {
-      // fallback
+      // fallback safe value
     }
     return 1248;
   }
@@ -189,8 +248,8 @@ async function startServer() {
         file,
         JSON.stringify({ totalHits: count, lastUpdated: new Date().toISOString() }, null, 2)
       );
-    } catch (err) {
-      console.error('Hit counter safe write notice:', err);
+    } catch {
+      // safe fallback
     }
     return count;
   }
@@ -207,16 +266,16 @@ async function startServer() {
   });
 
   // Secure feedback endpoint with strict rate limiting (max 5 requests per 10 minutes per IP)
-  const feedbackLimiter = createRateLimiter(5, 10 * 60 * 1000, 'Too many feedback submissions from this IP. Please wait a few minutes.');
+  const feedbackLimiter = createRateLimiter(5, 10 * 60 * 1000, 'Too many feedback submissions. Please wait a few minutes.');
 
   app.post('/api/feedback', feedbackLimiter, async (req: Request, res: Response) => {
     try {
       const { name, contactEmail, topic, feedback, message } = req.body || {};
 
-      const sanitizedName = sanitizeInput(name) || 'Anonymous';
-      const sanitizedEmail = sanitizeInput(contactEmail);
-      const sanitizedTopic = sanitizeInput(topic) || 'General Feedback';
-      const sanitizedMessage = sanitizeInput(feedback || message);
+      const sanitizedName = sanitizeInput(name, 100) || 'Anonymous';
+      const sanitizedEmail = sanitizeInput(contactEmail, 120);
+      const sanitizedTopic = sanitizeInput(topic, 100) || 'General Feedback';
+      const sanitizedMessage = sanitizeInput(feedback || message, 2000);
 
       if (!sanitizedMessage) {
         res.status(400).json({ error: 'Feedback message cannot be empty' });
@@ -255,11 +314,11 @@ async function startServer() {
         }
         existing.unshift(feedbackEntry);
         fs.writeFileSync(feedbacksFile, JSON.stringify(existing.slice(0, 200), null, 2));
-      } catch (fileErr) {
-        console.error('Safe feedback file write warning:', fileErr);
+      } catch {
+        // safe fallback
       }
 
-      // 2. Relay to developer email strictly on server: developer email is NEVER sent to browser
+      // 2. Relay to developer email strictly on server: developer email is NEVER exposed
       const developerEmail = process.env.DEVELOPER_EMAIL || 'sharemailac@gmail.com';
       try {
         await fetch(`https://formsubmit.co/ajax/${developerEmail}`, {
@@ -281,16 +340,15 @@ async function startServer() {
             Timestamp: feedbackEntry.timestamp,
           }),
         });
-      } catch (relayErr) {
-        console.error('Server email relay warning (saved locally):', relayErr);
+      } catch {
+        // server relay fallback
       }
 
       res.status(200).json({
         success: true,
         message: 'Feedback securely received and forwarded.',
       });
-    } catch (err) {
-      console.error('Feedback handling error:', err);
+    } catch {
       res.status(500).json({ error: 'Internal server error processing feedback' });
     }
   });
@@ -310,7 +368,7 @@ async function startServer() {
       }
 
       const { prompt, currencyCode } = req.body || {};
-      const sanitizedPrompt = sanitizeInput(prompt);
+      const sanitizedPrompt = sanitizeInput(prompt, 1000);
 
       if (!sanitizedPrompt) {
         res.status(400).json({ error: 'Prompt is required' });
@@ -320,16 +378,15 @@ async function startServer() {
       // Call Gemini API securely on server
       const response = await client.models.generateContent({
         model: 'gemini-2.5-flash',
-        contents: `You are an expert currency assistant for the app Currency Counter (${sanitizeInput(currencyCode) || 'Global'}). Provide a concise, safe, helpful response.\n\nUser request: ${sanitizedPrompt}`,
+        contents: `You are an expert currency assistant for the app Currency Counter (${sanitizeInput(currencyCode, 20) || 'Global'}). Provide a concise, safe, helpful response.\n\nUser request: ${sanitizedPrompt}`,
       });
 
       res.json({
         success: true,
         text: response.text || '',
       });
-    } catch (err: unknown) {
-      // Never reveal raw SDK stack traces or API keys in error output
-      console.error('Secure AI proxy error:', err);
+    } catch {
+      // Never reveal raw SDK stack traces or internal details
       res.status(500).json({
         error: 'Failed to process AI request safely.',
       });
@@ -353,6 +410,14 @@ async function startServer() {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
+
+  // Generic 500 error handler that never leaks stack traces or file systems
+  app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
+    if (res.headersSent) {
+      return next(err);
+    }
+    res.status(500).json({ error: 'A secure error occurred. Request terminated.' });
+  });
 
   app.listen(PORT, HOST, () => {
     console.log(`[Security Shield Active] Server running securely on http://${HOST}:${PORT}`);

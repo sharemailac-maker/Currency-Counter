@@ -40,6 +40,7 @@ import {
   getSelectedCalculator, 
   setSelectedCalculator 
 } from '../utils/calculatorSettings';
+import { safeJsonParse, cleanPrototypePollution } from '../utils/security';
 
 interface SettingsViewProps {
   soundEnabled: boolean;
@@ -162,30 +163,63 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     downloadAnchor.remove();
   };
 
-  // Import JSON backup
+  // Import JSON backup with strict validation and prototype pollution defense
   const handleImportBackup = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Defense: Reject oversized files to prevent memory exhaustion
+    if (file.size > 5 * 1024 * 1024) {
+      setImportStatus('File too large (max 5MB)');
+      setTimeout(() => setImportStatus(null), 3000);
+      e.target.value = '';
+      return;
+    }
 
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
         const content = event.target?.result as string;
-        const parsed = JSON.parse(content);
-        if (Array.isArray(parsed.tallies)) {
-          onImportTallies(parsed.tallies);
-          setImportStatus(`Successfully restored ${parsed.tallies.length} tallies!`);
+        const parsed = safeJsonParse<any>(content, null);
+
+        if (!parsed) {
+          setImportStatus('Invalid or corrupt backup JSON');
           setTimeout(() => setImportStatus(null), 3000);
-        } else if (Array.isArray(parsed)) {
-          onImportTallies(parsed);
-          setImportStatus(`Successfully restored ${parsed.length} tallies!`);
+          return;
+        }
+
+        const rawList: unknown[] = Array.isArray(parsed.tallies)
+          ? parsed.tallies
+          : Array.isArray(parsed)
+          ? parsed
+          : [];
+
+        // Validate each tally structure to ensure clean data
+        const validatedTallies: SavedTally[] = rawList
+          .filter((item): item is SavedTally => {
+            if (!item || typeof item !== 'object') return false;
+            const obj = item as Record<string, unknown>;
+            return (
+              typeof obj.id === 'string' &&
+              typeof obj.countryId === 'string' &&
+              typeof obj.totalAmount === 'number' &&
+              !isNaN(obj.totalAmount) &&
+              typeof obj.counts === 'object' &&
+              obj.counts !== null
+            );
+          })
+          .map((item) => cleanPrototypePollution(item));
+
+        if (validatedTallies.length > 0) {
+          onImportTallies(validatedTallies);
+          setImportStatus(`Successfully restored ${validatedTallies.length} tallies!`);
           setTimeout(() => setImportStatus(null), 3000);
         } else {
-          setImportStatus('Invalid backup file format');
+          setImportStatus('No valid tally records found in file');
           setTimeout(() => setImportStatus(null), 3000);
         }
       } catch {
-        setImportStatus('Error reading file');
+        setImportStatus('Error reading file safely');
         setTimeout(() => setImportStatus(null), 3000);
       }
     };

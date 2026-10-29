@@ -1,4 +1,5 @@
 import { MasterEmployee } from '../types';
+import { safeJsonParse } from './security';
 
 export const STORAGE_KEY_MASTER_EMPLOYEES = 'currency_counter_master_employees_v2';
 export const STORAGE_KEY_MASTER_DEPARTMENTS = 'currency_counter_master_departments_v2';
@@ -49,18 +50,11 @@ export const INITIAL_DEFAULT_EMPLOYEES: MasterEmployee[] = [
 /* ------------------- MASTER EMPLOYEES CRUD ------------------- */
 
 export function getMasterEmployees(): MasterEmployee[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_MASTER_EMPLOYEES);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
-      }
-    }
-  } catch (err) {
-    console.error('Failed to load master employees', err);
-  }
-  return INITIAL_DEFAULT_EMPLOYEES;
+  return safeJsonParse<MasterEmployee[]>(
+    localStorage.getItem(STORAGE_KEY_MASTER_EMPLOYEES),
+    INITIAL_DEFAULT_EMPLOYEES,
+    (d) => Array.isArray(d) && d.length > 0
+  );
 }
 
 export function saveMasterEmployees(employees: MasterEmployee[]): void {
@@ -141,18 +135,11 @@ export function clearAllMasterEmployees(): void {
 /* ------------------- MASTER DEPARTMENTS CRUD ------------------- */
 
 export function getMasterDepartments(): string[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_MASTER_DEPARTMENTS);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
-      }
-    }
-  } catch (err) {
-    console.error('Failed to load master departments', err);
-  }
-  return DEFAULT_MASTER_DEPARTMENTS;
+  return safeJsonParse<string[]>(
+    localStorage.getItem(STORAGE_KEY_MASTER_DEPARTMENTS),
+    DEFAULT_MASTER_DEPARTMENTS,
+    (d) => Array.isArray(d) && d.length > 0
+  );
 }
 
 export function saveMasterDepartments(depts: string[]): void {
@@ -222,18 +209,11 @@ export function deleteMultipleMasterDepartments(deptNames: string[]): number {
 /* ------------------- MASTER REMARKS / NARRATIONS CRUD ------------------- */
 
 export function getMasterRemarks(): string[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_MASTER_REMARKS);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
-      }
-    }
-  } catch (err) {
-    console.error('Failed to load master remarks', err);
-  }
-  return DEFAULT_MASTER_REMARKS;
+  return safeJsonParse<string[]>(
+    localStorage.getItem(STORAGE_KEY_MASTER_REMARKS),
+    DEFAULT_MASTER_REMARKS,
+    (d) => Array.isArray(d) && d.length > 0
+  );
 }
 
 export function saveMasterRemarks(remarks: string[]): void {

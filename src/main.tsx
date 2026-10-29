@@ -3,6 +3,10 @@ import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import { LanguageProvider } from './i18n/LanguageContext.tsx';
+import { initClientSecurityShield } from './utils/security';
+
+// Initialize client-side security armor (anti-prototype pollution & tampering)
+initClientSecurityShield();
 
 // Register offline service worker for standalone PWA installation
 if ('serviceWorker' in navigator) {

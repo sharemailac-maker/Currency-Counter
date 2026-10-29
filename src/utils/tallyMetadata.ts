@@ -1,3 +1,5 @@
+import { safeJsonParse } from './security';
+
 export const STORAGE_KEY_REMARKS = 'currency_counter_remembered_remarks_v1';
 export const STORAGE_KEY_AUTO_REMEMBER = 'currency_counter_auto_remember_remark_v1';
 export const STORAGE_KEY_EMPLOYEES = 'currency_counter_remembered_employees_v1';
@@ -41,18 +43,12 @@ export const DEFAULT_EMPLOYEES: string[] = [
 ];
 
 export function getRememberedRemarks(): string[] {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY_REMARKS);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
-      }
-    }
-  } catch (err) {
-    console.error('Failed to load remembered remarks', err);
-  }
-  return DEFAULT_REMARKS;
+  const parsed = safeJsonParse<string[]>(
+    localStorage.getItem(STORAGE_KEY_REMARKS),
+    DEFAULT_REMARKS,
+    (d) => Array.isArray(d) && d.length > 0
+  );
+  return parsed;
 }
 
 export function saveRememberedRemark(remark: string): void {
@@ -96,18 +92,11 @@ export function setAutoRememberPreference(enabled: boolean): void {
 }
 
 export function getRememberedEmployees(): string[] {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY_EMPLOYEES);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
-      }
-    }
-  } catch (err) {
-    console.error('Failed to load remembered employees', err);
-  }
-  return DEFAULT_EMPLOYEES;
+  return safeJsonParse<string[]>(
+    localStorage.getItem(STORAGE_KEY_EMPLOYEES),
+    DEFAULT_EMPLOYEES,
+    (d) => Array.isArray(d) && d.length > 0
+  );
 }
 
 export function saveRememberedEmployee(name: string): void {
@@ -124,18 +113,11 @@ export function saveRememberedEmployee(name: string): void {
 }
 
 export function getRememberedDepartments(): string[] {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY_DEPARTMENTS);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
-      }
-    }
-  } catch (err) {
-    console.error('Failed to load remembered departments', err);
-  }
-  return DEFAULT_DEPARTMENTS;
+  return safeJsonParse<string[]>(
+    localStorage.getItem(STORAGE_KEY_DEPARTMENTS),
+    DEFAULT_DEPARTMENTS,
+    (d) => Array.isArray(d) && d.length > 0
+  );
 }
 
 export function saveRememberedDepartment(dept: string): void {

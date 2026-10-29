@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { LanguageCode, LanguageMeta, TranslationDictionary } from './types';
 import { SUPPORTED_LANGUAGES, DEFAULT_LANGUAGE } from './languages';
 import { TRANSLATIONS } from './translations';
+import { safeJsonParse, cleanPrototypePollution } from '../utils/security';
 
 const STORAGE_KEY_LANGUAGE = 'currency_counter_language_v1';
 const STORAGE_KEY_CUSTOM_PACKS = 'currency_counter_custom_packs_v1';
@@ -23,12 +24,10 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [customPacks, setCustomPacks] = useState<Record<string, TranslationDictionary>>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY_CUSTOM_PACKS);
-      return saved ? JSON.parse(saved) : {};
-    } catch {
-      return {};
-    }
+    return safeJsonParse<Record<string, TranslationDictionary>>(
+      localStorage.getItem(STORAGE_KEY_CUSTOM_PACKS),
+      {}
+    );
   });
 
   const [language, setLanguageState] = useState<LanguageCode>(() => {
@@ -176,18 +175,22 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     URL.revokeObjectURL(url);
   }, [language, customPacks]);
 
-  // Import custom language pack
+  // Import custom language pack with prototype pollution defense
   const importCustomLanguagePack = useCallback((jsonContent: string): { success: boolean; message: string } => {
     try {
-      const parsed = JSON.parse(jsonContent);
+      const parsed = safeJsonParse<any>(jsonContent, null);
+      if (!parsed) {
+        return { success: false, message: 'Invalid or corrupt JSON format.' };
+      }
+
       let dict: TranslationDictionary | null = null;
       let code: LanguageCode | null = null;
 
       if (parsed.dictionary && parsed.languageCode) {
-        dict = parsed.dictionary;
-        code = parsed.languageCode;
+        dict = cleanPrototypePollution(parsed.dictionary);
+        code = cleanPrototypePollution(parsed.languageCode);
       } else if (parsed.meta?.code && parsed.common && parsed.counter) {
-        dict = parsed;
+        dict = cleanPrototypePollution(parsed);
         code = parsed.meta.code;
       }
 

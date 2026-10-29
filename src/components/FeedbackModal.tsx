@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Send, MessageSquare, Check, ShieldCheck, Info } from 'lucide-react';
+import { safeJsonParse } from '../utils/security';
 
 interface FeedbackModalProps {
   isOpen: boolean;
@@ -32,10 +33,12 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
   useEffect(() => {
     const handleOnline = async () => {
       try {
-        const rawQueue = localStorage.getItem(STORAGE_KEY_FEEDBACK_QUEUE);
-        if (!rawQueue) return;
-        const queue: PendingFeedback[] = JSON.parse(rawQueue);
-        if (!Array.isArray(queue) || queue.length === 0) return;
+        const queue = safeJsonParse<PendingFeedback[]>(
+          localStorage.getItem(STORAGE_KEY_FEEDBACK_QUEUE),
+          [],
+          (d) => Array.isArray(d)
+        );
+        if (queue.length === 0) return;
 
         const remainingQueue: PendingFeedback[] = [];
         for (const item of queue) {
@@ -123,10 +126,13 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
     } catch {
       // Offline fallback: store in local storage queue
       try {
-        const raw = localStorage.getItem(STORAGE_KEY_FEEDBACK_QUEUE);
-        const queue = raw ? JSON.parse(raw) : [];
+        const queue = safeJsonParse<PendingFeedback[]>(
+          localStorage.getItem(STORAGE_KEY_FEEDBACK_QUEUE),
+          [],
+          (d) => Array.isArray(d)
+        );
         queue.push(payload);
-        localStorage.setItem(STORAGE_KEY_FEEDBACK_QUEUE, JSON.stringify(queue));
+        localStorage.setItem(STORAGE_KEY_FEEDBACK_QUEUE, JSON.stringify(queue.slice(0, 50)));
       } catch {
         // storage quota fallback
       }

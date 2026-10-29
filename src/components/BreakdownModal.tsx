@@ -3,6 +3,7 @@ import { CountryCurrency, Denomination, DenominationCounts } from '../types';
 import { formatCurrencyAmount, generateCashSlipText } from '../utils/formatters';
 import { copyToClipboard } from '../utils/clipboard';
 import { useLanguage } from '../i18n/LanguageContext';
+import { escapeHtml } from '../utils/security';
 import { 
   X, 
   Copy, 
@@ -160,7 +161,7 @@ export const BreakdownModal: React.FC<BreakdownModalProps> = ({
 <html>
 <head>
   <meta charset="utf-8">
-  <title>${title || 'Cash Tally Slip'} - ${country.countryName} (${country.currencyCode})</title>
+  <title>${escapeHtml(title || 'Cash Tally Slip')} - ${escapeHtml(country.countryName)} (${escapeHtml(country.currencyCode)})</title>
   <style>
     @page {
       size: portrait;

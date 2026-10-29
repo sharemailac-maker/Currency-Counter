@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { copyToClipboard } from '../utils/clipboard';
 import { GiftFooter } from './GiftFooter';
+import { escapeHtml } from '../utils/security';
 
 interface FinancialCalculatorsProps {
   activeCalculator: ActiveCalculatorType;
@@ -293,6 +294,9 @@ export const FinancialCalculators: React.FC<FinancialCalculatorsProps> = ({
         minute: '2-digit',
       });
 
+      const safeSymbol = escapeHtml(currencySymbol);
+      const safeCode = escapeHtml(currencyCode);
+
       let title = '';
       let rowsHtml = '';
       let highlightLabel = '';
@@ -302,53 +306,53 @@ export const FinancialCalculators: React.FC<FinancialCalculatorsProps> = ({
       if (activeCalculator === 'fd') {
         title = 'FIXED DEPOSIT (FD) CALCULATION VOUCHER';
         highlightLabel = 'Maturity Payout Value';
-        highlightValue = `${currencySymbol} ${Math.round(fdResult.maturity).toLocaleString()}`;
-        highlightSub = `Principal + Total Interest after ${fdYears}Y ${fdMonths > 0 ? `${fdMonths}M` : ''}`;
+        highlightValue = `${safeSymbol} ${Math.round(fdResult.maturity).toLocaleString()}`;
+        highlightSub = `Principal + Total Interest after ${escapeHtml(fdYears)}Y ${fdMonths > 0 ? `${escapeHtml(fdMonths)}M` : ''}`;
         rowsHtml = `
-          <tr><td>Principal Amount</td><td class="font-bold text-right font-mono">${currencySymbol} ${Math.round(fdResult.principal).toLocaleString()} ${currencyCode}</td></tr>
-          <tr><td>Interest Type</td><td class="font-bold text-right">${fdInterestType === 'simple' ? 'Simple Interest' : `Compounding (${frequencyLabel(fdFrequency)})`}</td></tr>
-          <tr><td>Annual Interest Rate</td><td class="font-bold text-right font-mono">${fdRate}% p.a.</td></tr>
-          <tr><td>Deposit Tenure</td><td class="font-bold text-right font-mono">${fdYears} Years ${fdMonths > 0 ? `${fdMonths} Months` : ''} (${fdResult.totalTenureMonths} mo)</td></tr>
-          <tr><td>Total Interest Earned</td><td class="font-bold text-right font-mono text-emerald" style="color: #15803d;">+ ${currencySymbol} ${Math.round(fdResult.interest).toLocaleString()}</td></tr>
+          <tr><td>Principal Amount</td><td class="font-bold text-right font-mono">${safeSymbol} ${Math.round(fdResult.principal).toLocaleString()} ${safeCode}</td></tr>
+          <tr><td>Interest Type</td><td class="font-bold text-right">${fdInterestType === 'simple' ? 'Simple Interest' : `Compounding (${escapeHtml(frequencyLabel(fdFrequency))})`}</td></tr>
+          <tr><td>Annual Interest Rate</td><td class="font-bold text-right font-mono">${escapeHtml(fdRate)}% p.a.</td></tr>
+          <tr><td>Deposit Tenure</td><td class="font-bold text-right font-mono">${escapeHtml(fdYears)} Years ${fdMonths > 0 ? `${escapeHtml(fdMonths)} Months` : ''} (${fdResult.totalTenureMonths} mo)</td></tr>
+          <tr><td>Total Interest Earned</td><td class="font-bold text-right font-mono text-emerald" style="color: #15803d;">+ ${safeSymbol} ${Math.round(fdResult.interest).toLocaleString()}</td></tr>
         `;
       } else if (activeCalculator === 'sip') {
         title = 'SIP INVESTMENT WEALTH VOUCHER';
         highlightLabel = 'Expected Maturity Wealth';
-        highlightValue = `${currencySymbol} ${Math.round(sipResult.maturity).toLocaleString()}`;
+        highlightValue = `${safeSymbol} ${Math.round(sipResult.maturity).toLocaleString()}`;
         highlightSub = `Invested amount + Compounded wealth gains`;
         rowsHtml = `
-          <tr><td>Monthly SIP Amount</td><td class="font-bold text-right font-mono">${currencySymbol} ${parseFloat(sipMonthly || '0').toLocaleString()} / month</td></tr>
-          <tr><td>Expected Return Rate</td><td class="font-bold text-right font-mono">${sipRate}% p.a.</td></tr>
-          <tr><td>Compounding Frequency</td><td class="font-bold text-right">${frequencyLabel(sipCompounding)}</td></tr>
-          <tr><td>Investment Period</td><td class="font-bold text-right font-mono">${sipYears} Years (${sipResult.totalMonths} Installments)</td></tr>
-          <tr><td>Total Amount Invested</td><td class="font-bold text-right font-mono">${currencySymbol} ${Math.round(sipResult.invested).toLocaleString()}</td></tr>
-          <tr><td>Estimated Wealth Gain</td><td class="font-bold text-right font-mono" style="color: #15803d;">+ ${currencySymbol} ${Math.round(sipResult.returns).toLocaleString()}</td></tr>
+          <tr><td>Monthly SIP Amount</td><td class="font-bold text-right font-mono">${safeSymbol} ${parseFloat(sipMonthly || '0').toLocaleString()} / month</td></tr>
+          <tr><td>Expected Return Rate</td><td class="font-bold text-right font-mono">${escapeHtml(sipRate)}% p.a.</td></tr>
+          <tr><td>Compounding Frequency</td><td class="font-bold text-right">${escapeHtml(frequencyLabel(sipCompounding))}</td></tr>
+          <tr><td>Investment Period</td><td class="font-bold text-right font-mono">${escapeHtml(sipYears)} Years (${sipResult.totalMonths} Installments)</td></tr>
+          <tr><td>Total Amount Invested</td><td class="font-bold text-right font-mono">${safeSymbol} ${Math.round(sipResult.invested).toLocaleString()}</td></tr>
+          <tr><td>Estimated Wealth Gain</td><td class="font-bold text-right font-mono" style="color: #15803d;">+ ${safeSymbol} ${Math.round(sipResult.returns).toLocaleString()}</td></tr>
         `;
       } else if (activeCalculator === 'rd') {
         title = 'RECURRING DEPOSIT (RD) CALCULATION VOUCHER';
         highlightLabel = 'Maturity Payout Value';
-        highlightValue = `${currencySymbol} ${Math.round(rdResult.maturity).toLocaleString()}`;
+        highlightValue = `${safeSymbol} ${Math.round(rdResult.maturity).toLocaleString()}`;
         highlightSub = `Total Deposited + Interest`;
         rowsHtml = `
-          <tr><td>Monthly Installment</td><td class="font-bold text-right font-mono">${currencySymbol} ${parseFloat(rdMonthly || '0').toLocaleString()} / month</td></tr>
-          <tr><td>Interest Type</td><td class="font-bold text-right">${rdInterestType === 'simple' ? 'Simple Interest' : `Compounding (${frequencyLabel(rdFrequency)})`}</td></tr>
-          <tr><td>Annual Interest Rate</td><td class="font-bold text-right font-mono">${rdRate}% p.a.</td></tr>
-          <tr><td>Total Tenure</td><td class="font-bold text-right font-mono">${rdMonths} Months (${(rdMonths / 12).toFixed(1)} Years)</td></tr>
-          <tr><td>Total Amount Deposited</td><td class="font-bold text-right font-mono">${currencySymbol} ${Math.round(rdResult.invested).toLocaleString()}</td></tr>
-          <tr><td>Total Interest Earned</td><td class="font-bold text-right font-mono" style="color: #15803d;">+ ${currencySymbol} ${Math.round(rdResult.interest).toLocaleString()}</td></tr>
+          <tr><td>Monthly Installment</td><td class="font-bold text-right font-mono">${safeSymbol} ${parseFloat(rdMonthly || '0').toLocaleString()} / month</td></tr>
+          <tr><td>Interest Type</td><td class="font-bold text-right">${rdInterestType === 'simple' ? 'Simple Interest' : `Compounding (${escapeHtml(frequencyLabel(rdFrequency))})`}</td></tr>
+          <tr><td>Annual Interest Rate</td><td class="font-bold text-right font-mono">${escapeHtml(rdRate)}% p.a.</td></tr>
+          <tr><td>Total Tenure</td><td class="font-bold text-right font-mono">${escapeHtml(rdMonths)} Months (${(rdMonths / 12).toFixed(1)} Years)</td></tr>
+          <tr><td>Total Amount Deposited</td><td class="font-bold text-right font-mono">${safeSymbol} ${Math.round(rdResult.invested).toLocaleString()}</td></tr>
+          <tr><td>Total Interest Earned</td><td class="font-bold text-right font-mono" style="color: #15803d;">+ ${safeSymbol} ${Math.round(rdResult.interest).toLocaleString()}</td></tr>
         `;
       } else if (activeCalculator === 'loan_emi') {
         title = 'LOAN EMI & REPAYMENT VOUCHER';
         highlightLabel = 'Monthly Loan EMI';
-        highlightValue = `${currencySymbol} ${Math.round(loanResult.emi).toLocaleString()} / mo`;
-        highlightSub = `Fixed monthly installment for ${loanYears} years (${loanResult.totalMonths} payments)`;
+        highlightValue = `${safeSymbol} ${Math.round(loanResult.emi).toLocaleString()} / mo`;
+        highlightSub = `Fixed monthly installment for ${escapeHtml(loanYears)} years (${loanResult.totalMonths} payments)`;
         rowsHtml = `
-          <tr><td>Loan Principal Amount</td><td class="font-bold text-right font-mono">${currencySymbol} ${Math.round(loanResult.principal).toLocaleString()} ${currencyCode}</td></tr>
+          <tr><td>Loan Principal Amount</td><td class="font-bold text-right font-mono">${safeSymbol} ${Math.round(loanResult.principal).toLocaleString()} ${safeCode}</td></tr>
           <tr><td>Interest Rate Model</td><td class="font-bold text-right">${loanInterestType === 'reducing' ? 'Reducing Balance (Monthly Compounding)' : 'Flat Simple Interest Rate'}</td></tr>
-          <tr><td>Annual Interest Rate</td><td class="font-bold text-right font-mono">${loanRate}% p.a.</td></tr>
-          <tr><td>Loan Tenure</td><td class="font-bold text-right font-mono">${loanYears} Years (${loanResult.totalMonths} Months)</td></tr>
-          <tr><td>Total Interest Payable</td><td class="font-bold text-right font-mono" style="color: #b45309;">${currencySymbol} ${Math.round(loanResult.totalInterest).toLocaleString()}</td></tr>
-          <tr><td>Total Repayment Amount</td><td class="font-bold text-right font-mono">${currencySymbol} ${Math.round(loanResult.totalPayment).toLocaleString()}</td></tr>
+          <tr><td>Annual Interest Rate</td><td class="font-bold text-right font-mono">${escapeHtml(loanRate)}% p.a.</td></tr>
+          <tr><td>Loan Tenure</td><td class="font-bold text-right font-mono">${escapeHtml(loanYears)} Years (${loanResult.totalMonths} Months)</td></tr>
+          <tr><td>Total Interest Payable</td><td class="font-bold text-right font-mono" style="color: #b45309;">${safeSymbol} ${Math.round(loanResult.totalInterest).toLocaleString()}</td></tr>
+          <tr><td>Total Repayment Amount</td><td class="font-bold text-right font-mono">${safeSymbol} ${Math.round(loanResult.totalPayment).toLocaleString()}</td></tr>
         `;
       }
 
