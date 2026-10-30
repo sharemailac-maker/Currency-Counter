@@ -633,7 +633,7 @@ export const BreakdownModal: React.FC<BreakdownModalProps> = ({
             {/* Receipt Slip Footer with App Name & Country */}
             <div className="mt-2.5 pt-2 border-t border-dashed border-stone-300 dark:border-stone-700 text-center text-[10px] text-stone-500 font-sans">
               <div className="font-semibold text-stone-800 dark:text-stone-200">
-                Generated with Currency Counter (Offline)
+                Calculated via Currency Counter • 100% Offline • https://currency-counter.ai.studio
               </div>
               <div className="text-stone-500 mt-0.5">
                 {country.countryName} {country.flag} • Official Cash Denomination Slip

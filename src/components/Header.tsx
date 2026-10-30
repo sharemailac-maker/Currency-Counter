@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 import { useLanguage } from '../i18n/LanguageContext';
+import { reloadAndApplyUpdate } from '../utils/appUpdate';
 
 interface HeaderProps {
   currentCountry: CountryCurrency;
@@ -34,6 +35,23 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const { isInstallable, isInstalled, install } = usePWAInstall();
   const { t } = useLanguage();
+
+  // Handle instant app update directly without redirecting to settings
+  const handleInstantUpdate = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      if ('serviceWorker' in navigator) {
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (registration) {
+          await registration.update();
+        }
+      }
+    } catch {
+      // Ignore offline error
+    }
+    reloadAndApplyUpdate();
+  };
 
   return (
     <header className="sticky top-0 z-30 bg-gradient-to-r from-[#120626] via-[#1d0d47] to-[#0d0422] text-stone-100 shadow-xl border-b border-purple-500/30 relative overflow-hidden">
@@ -142,13 +160,21 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* Permanent Top-Right App Icon */}
-          <div className="pl-1 border-l border-white/20 ml-0.5 shrink-0" title="Currency Counter">
-            <img
-              src="/app-icon.png"
-              alt="Currency Counter"
-              className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-cover border border-amber-300/70 shadow-xs ring-1 ring-black/20"
-            />
+          {/* Permanent Top-Right App Icon - Instant App Update without redirecting to settings */}
+          <div className="pl-1 border-l border-white/20 ml-0.5 shrink-0" title="Update App">
+            <button
+              id="btn-instant-app-update"
+              onClick={handleInstantUpdate}
+              className="flex items-center justify-center rounded-lg border border-amber-300/70 hover:border-amber-300 active:scale-95 transition cursor-pointer shadow-xs focus:outline-hidden"
+              title="Update App"
+              aria-label="Update app instantly"
+            >
+              <img
+                src="/app-icon.png"
+                alt="Update App"
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-cover ring-1 ring-black/20"
+              />
+            </button>
           </div>
         </div>
       </div>

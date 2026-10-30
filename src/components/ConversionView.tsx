@@ -285,7 +285,7 @@ export const ConversionView: React.FC<ConversionViewProps> = ({
 
   const handleCopyQuote = async () => {
     const enteredRateText = `1 ${baseCurrencyCode} = ${calculations.rate} ${quoteCurrencyCode}`;
-    const text = `Currency Conversion Quote\n-------------------------\nFrom: ${fromCountry.currencySymbol} ${calculations.amount.toLocaleString()} (${fromCountry.currencyCode})\nEntered Rate: ${enteredRateText}\nEffective Unit Rate: 1 ${fromCountry.currencyCode} = ${calculations.effectiveUnitRate.toFixed(6)} ${toCountry.currencyCode}\nGross Converted: ${toCountry.currencySymbol} ${calculations.grossConverted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\nExchange Fee: -${toCountry.currencySymbol} ${calculations.feeDeductedInTarget.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${feeType === 'none' ? '0% Fee' : feeType === 'percent' ? `${feePercent || '0'}%` : 'Flat fee'})\nNet Receivable: ${toCountry.currencySymbol} ${calculations.netReceived.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${toCountry.currencyCode})`;
+    const text = `Currency Conversion Quote\n-------------------------\nFrom: ${fromCountry.currencySymbol} ${calculations.amount.toLocaleString()} (${fromCountry.currencyCode})\nEntered Rate: ${enteredRateText}\nEffective Unit Rate: 1 ${fromCountry.currencyCode} = ${calculations.effectiveUnitRate.toFixed(6)} ${toCountry.currencyCode}\nGross Converted: ${toCountry.currencySymbol} ${calculations.grossConverted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\nExchange Fee: -${toCountry.currencySymbol} ${calculations.feeDeductedInTarget.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${feeType === 'none' ? '0% Fee' : feeType === 'percent' ? `${feePercent || '0'}%` : 'Flat fee'})\nNet Receivable: ${toCountry.currencySymbol} ${calculations.netReceived.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${toCountry.currencyCode})\n-------------------------\nCalculated via Currency Counter • 100% Offline • https://currency-counter.ai.studio`;
     await copyToClipboard(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -541,7 +541,7 @@ export const ConversionView: React.FC<ConversionViewProps> = ({
     </div>
 
     <div class="footer">
-      Generated with Currency Counter • 100% Offline • Quotation Slip
+      Calculated via Currency Counter • 100% Offline • https://currency-counter.ai.studio • Quotation Slip
     </div>
   </div>
 </body>

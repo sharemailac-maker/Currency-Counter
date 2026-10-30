@@ -211,7 +211,7 @@ export interface TranslationDictionary {
     customCurrencyDesc: string;
     addCustomBtn: string;
     noCustomDenoms: string;
-    createFirstCustom: string;
+    createFirstCustom?: string;
     companyModeHeader: string;
     companyModeBadge: string;
     shareAppHeader: string;
@@ -231,6 +231,11 @@ export interface TranslationDictionary {
     totalHitsLabel?: string;
     deviceVisitsLabel?: string;
     privacyNotice?: string;
+    updateAppHeader?: string;
+    updateAppDesc?: string;
+    updateAppBtn?: string;
+    updateAppChecking?: string;
+    updateAppLatest?: string;
   };
   guide: AppFunctionGuide;
 }

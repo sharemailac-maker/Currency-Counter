@@ -182,7 +182,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
     const remarkStr = tally.remark ? `\nRemark: ${tally.remark}` : '';
     const empStr = tally.employeeName ? `\nStaff: ${tally.employeeName}` : '';
     const deptStr = tally.department ? `\nDepartment: ${tally.department}` : '';
-    const text = `Cash Tally: ${tally.title}${deptStr}${empStr}${remarkStr}\nDate: ${new Date(tally.timestamp).toLocaleString()}\nTotal: ${tally.currencySymbol}${tally.totalAmount.toLocaleString()} (${tally.currencyCode})\nPieces: ${tally.totalPieces} (${tally.totalNotes} notes, ${tally.totalCoins} coins)\nIn Words: ${tally.amountInWords}`;
+    const text = `Cash Tally: ${tally.title}${deptStr}${empStr}${remarkStr}\nDate: ${new Date(tally.timestamp).toLocaleString()}\nTotal: ${tally.currencySymbol}${tally.totalAmount.toLocaleString()} (${tally.currencyCode})\nPieces: ${tally.totalPieces} (${tally.totalNotes} notes, ${tally.totalCoins} coins)\nIn Words: ${tally.amountInWords}\n-------------------------\nCalculated via Currency Counter • 100% Offline • https://currency-counter.ai.studio`;
     await copyToClipboard(text);
     setCopiedTallyId(tally.id);
     setTimeout(() => setCopiedTallyId(null), 2000);

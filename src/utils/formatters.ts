@@ -102,7 +102,7 @@ export function generateCashSlipText(
   text += `TOTAL AMOUNT : ${formatCurrencyAmount(grandTotal, country, true)}\n`;
   text += `IN WORDS     : ${amountInWords}\n`;
   text += `==============================\n`;
-  text += `Generated with Currency Counter (Offline)\n`;
+  text += `Calculated via Currency Counter • 100% Offline • https://currency-counter.ai.studio\n`;
 
   return text;
 }

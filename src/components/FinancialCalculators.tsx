@@ -217,7 +217,7 @@ export const FinancialCalculators: React.FC<FinancialCalculatorsProps> = ({
         `Total Interest Earned: ${currencySymbol} ${Math.round(fdResult.interest).toLocaleString()} ${currencyCode}\n` +
         `Maturity Payout Amount: ${currencySymbol} ${Math.round(fdResult.maturity).toLocaleString()} ${currencyCode}\n` +
         `----------------------------------------\n` +
-        `Calculated via Currency Counter • 100% Offline`;
+        `Calculated via Currency Counter • 100% Offline • https://currency-counter.ai.studio`;
     } else if (activeCalculator === 'sip') {
       summaryText = `SIP Investment Plan Calculation Slip\n` +
         `----------------------------------------\n` +
@@ -231,7 +231,7 @@ export const FinancialCalculators: React.FC<FinancialCalculatorsProps> = ({
         `Estimated Wealth Gain: ${currencySymbol} ${Math.round(sipResult.returns).toLocaleString()} ${currencyCode}\n` +
         `Expected Maturity Value: ${currencySymbol} ${Math.round(sipResult.maturity).toLocaleString()} ${currencyCode}\n` +
         `----------------------------------------\n` +
-        `Calculated via Currency Counter • 100% Offline`;
+        `Calculated via Currency Counter • 100% Offline • https://currency-counter.ai.studio`;
     } else if (activeCalculator === 'rd') {
       summaryText = `Recurring Deposit (RD) Calculation Slip\n` +
         `----------------------------------------\n` +
@@ -245,7 +245,7 @@ export const FinancialCalculators: React.FC<FinancialCalculatorsProps> = ({
         `Total Interest Earned: ${currencySymbol} ${Math.round(rdResult.interest).toLocaleString()} ${currencyCode}\n` +
         `Maturity Payout Amount: ${currencySymbol} ${Math.round(rdResult.maturity).toLocaleString()} ${currencyCode}\n` +
         `----------------------------------------\n` +
-        `Calculated via Currency Counter • 100% Offline`;
+        `Calculated via Currency Counter • 100% Offline • https://currency-counter.ai.studio`;
     } else if (activeCalculator === 'loan_emi') {
       summaryText = `Loan EMI & Repayment Calculation Slip\n` +
         `----------------------------------------\n` +
@@ -259,7 +259,7 @@ export const FinancialCalculators: React.FC<FinancialCalculatorsProps> = ({
         `Total Interest Payable: ${currencySymbol} ${Math.round(loanResult.totalInterest).toLocaleString()} ${currencyCode}\n` +
         `Total Repayment (Principal + Interest): ${currencySymbol} ${Math.round(loanResult.totalPayment).toLocaleString()} ${currencyCode}\n` +
         `----------------------------------------\n` +
-        `Calculated via Currency Counter • 100% Offline`;
+        `Calculated via Currency Counter • 100% Offline • https://currency-counter.ai.studio`;
     }
 
     await copyToClipboard(summaryText);
@@ -541,7 +541,7 @@ export const FinancialCalculators: React.FC<FinancialCalculatorsProps> = ({
     </div>
 
     <div class="footer">
-      Generated with Currency Counter • 100% Offline • Gift from Yatinkumar Chauhan
+      Calculated via Currency Counter • 100% Offline • https://currency-counter.ai.studio • Gift from Yatinkumar Chauhan
     </div>
   </div>
 </body>
