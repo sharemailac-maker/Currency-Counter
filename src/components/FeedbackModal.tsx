@@ -269,10 +269,10 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
                 </div>
               </div>
 
-              {/* Mandatory Email ID */}
+              {/* Email ID */}
               <div>
                 <label className="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1">
-                  Your Email Address <span className="text-rose-500">* (Mandatory)</span>
+                  Your Email Address <span className="text-rose-500">*</span>
                 </label>
                 <input
                   id="input-feedback-modal-email"

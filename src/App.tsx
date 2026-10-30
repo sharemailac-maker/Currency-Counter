@@ -18,11 +18,14 @@ import { SettingsView } from './components/SettingsView';
 import { GiftFooter } from './components/GiftFooter';
 import { ResetConfirmModal } from './components/ResetConfirmModal';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
+import { FeedbackModal } from './components/FeedbackModal';
+import { FeedbackPromptBanner } from './components/FeedbackPromptBanner';
 import { Banknote, Coins, Layers, Undo2, ArrowLeftRight, FileText, Smartphone, X } from 'lucide-react';
 import { playChimeSound, playTapSound } from './utils/audio';
 import { usePWAInstall } from './hooks/usePWAInstall';
 import { initAnalytics, trackScreenView } from './utils/analytics';
 import { recordAnonymousVisit } from './utils/anonymousHitCounter';
+import { trackDeviceVisit, shouldShowFeedbackPrompt } from './utils/feedbackReminder';
 import { getCompanyMode, setCompanyMode } from './utils/companyMode';
 import { ActiveCalculatorType } from './types';
 import { getActiveCalculator } from './utils/calculatorSettings';
@@ -80,6 +83,26 @@ export default function App() {
 
     return () => clearTimeout(timer);
   }, [isInstalled]);
+
+  // In-app Feedback prompt for users visiting more than once
+  const [showFeedbackPrompt, setShowFeedbackPrompt] = useState<boolean>(false);
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    trackDeviceVisit();
+    if (shouldShowFeedbackPrompt()) {
+      const timer = setTimeout(() => {
+        setShowFeedbackPrompt(true);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleOpenFeedbackEvent = () => setIsFeedbackModalOpen(true);
+    window.addEventListener('open_feedback_modal', handleOpenFeedbackEvent);
+    return () => window.removeEventListener('open_feedback_modal', handleOpenFeedbackEvent);
+  }, []);
 
   // Initialize privacy-friendly Google Analytics 4 & anonymous hit count
   useEffect(() => {
@@ -845,6 +868,20 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* In-app Notification for Returning Visitors */}
+      {showFeedbackPrompt && (
+        <FeedbackPromptBanner
+          onOpenFeedback={() => setIsFeedbackModalOpen(true)}
+          onDismiss={() => setShowFeedbackPrompt(false)}
+        />
+      )}
+
+      {/* Global In-app Feedback Modal */}
+      <FeedbackModal
+        isOpen={isFeedbackModalOpen}
+        onClose={() => setIsFeedbackModalOpen(false)}
+      />
     </div>
   );
 }

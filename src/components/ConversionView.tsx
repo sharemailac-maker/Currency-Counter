@@ -566,32 +566,6 @@ export const ConversionView: React.FC<ConversionViewProps> = ({
 
   return (
     <div className="max-w-3xl w-full mx-auto px-3 sm:px-4 py-4 pb-28 text-stone-900 dark:text-stone-100 animate-in fade-in duration-200">
-      {/* Header card */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-sm mb-4 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300">
-            <ArrowLeftRight className="w-5 h-5" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold tracking-tight text-stone-900 dark:text-white">
-              Currency Converter
-            </h1>
-            <p className="text-xs text-stone-500 dark:text-stone-400">
-              Custom user exchange rate with deductible exchange fee & transaction cost options
-            </p>
-          </div>
-        </div>
-
-        {/* Permanent Top-Right App Icon */}
-        <div className="pl-1.5 border-l border-stone-200 dark:border-stone-800 ml-1 shrink-0" title="Currency Counter">
-          <img
-            src="/app-icon.png"
-            alt="Currency Counter"
-            className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-cover border border-amber-400/60 shadow-xs ring-1 ring-black/10"
-          />
-        </div>
-      </div>
-
       {/* Sub-Tabs: When a Financial Calculator (FD / SIP / RD / Loan EMI) is enabled from Settings */}
       {activeCalculator !== 'none' && (
         <div className="flex items-center gap-2 mb-4 p-1.5 rounded-2xl bg-stone-100 dark:bg-stone-800/80 border border-stone-200 dark:border-stone-700/80">
@@ -641,6 +615,36 @@ export const ConversionView: React.FC<ConversionViewProps> = ({
       ) : (
         /* RENDER STANDARD CURRENCY CONVERTER */
         <div className="space-y-4">
+          {/* Top Banner & Header inside Converter (matching FD/RD/SIP layout) */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-xs flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 sm:p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 shrink-0">
+                <ArrowLeftRight className="w-5 h-5 sm:w-6 sm:h-6" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base sm:text-lg font-black text-stone-900 dark:text-white">
+                    Currency Converter
+                  </h2>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">
+                    Active
+                  </span>
+                </div>
+                <p className="text-xs text-stone-500 dark:text-stone-400">
+                  Custom user exchange rate with deductible exchange fee & transaction cost options
+                </p>
+              </div>
+            </div>
+
+            {/* Top-Right App Icon */}
+            <div className="pl-2 border-l border-stone-200 dark:border-stone-800 ml-1 shrink-0" title="Currency Counter">
+              <img
+                src="/app-icon.png"
+                alt="Currency Counter"
+                className="w-8 h-8 rounded-lg object-cover border border-amber-400/60 shadow-xs ring-1 ring-black/10"
+              />
+            </div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Left Column: Input Settings */}
             <div className="space-y-4">

@@ -586,23 +586,16 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </button>
         </div>
 
-        {/* User Count (Summarized & Precise, Online Only, No Device Visits) */}
+        {/* Total App Users/Visitors Counter */}
         <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-xs flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-teal-100 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 shrink-0">
               <Users className="w-5 h-5" />
             </div>
-            <div className="flex items-center gap-2">
+            <div>
               <h2 className="text-sm font-bold text-stone-900 dark:text-white">
-                {t.settings.anonymousUserCount || 'User Count'}
+                {t.settings.anonymousUserCount || 'Total App Users/Visitors'}
               </h2>
-              <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
-                </span>
-                Online
-              </span>
             </div>
           </div>
 
@@ -615,7 +608,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               id="btn-refresh-anonymous-hits"
               onClick={handleRefreshHits}
               disabled={isRefreshingHits}
-              title="Refresh online user count"
+              title="Refresh total app users/visitors count"
               className="p-2 rounded-xl border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 transition cursor-pointer active:scale-95 disabled:opacity-50 shrink-0"
             >
               <RefreshCw className={`w-4 h-4 ${isRefreshingHits ? 'animate-spin text-emerald-600' : ''}`} />

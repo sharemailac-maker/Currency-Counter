@@ -1,5 +1,13 @@
 [
   {
+    "id": "fb-1793361504089-1ount",
+    "timestamp": "2026-10-30T11:58:24.089Z",
+    "name": "Currency Counter Tester",
+    "contactEmail": "test-delivery@example.com",
+    "topic": "Suggestion/Feedback of Currency Counter app",
+    "feedback": "Test feedback email delivery verification from automated testing suite."
+  },
+  {
     "id": "fb-1793293292427-02o1c",
     "timestamp": "2026-10-29T17:01:32.427Z",
     "name": "Tester",
