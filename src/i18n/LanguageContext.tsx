@@ -142,8 +142,10 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     let guideText = `=================================================================\n`;
     guideText += `${guide.title.toUpperCase()}\n`;
     guideText += `${guide.subtitle}\n`;
+    guideText += `Official Web App: https://currency-counter.ai.studio\n`;
     guideText += `=================================================================\n\n`;
     guideText += `OVERVIEW / परिचय:\n${guide.overview}\n\n`;
+    guideText += `App URL / वेब ऐप लिंक: https://currency-counter.ai.studio\n\n`;
     guideText += `-----------------------------------------------------------------\n`;
     guideText += `KEY FEATURES & HOW TO USE / मुख्य विशेषताएं और उपयोग विधि:\n`;
     guideText += `-----------------------------------------------------------------\n\n`;
@@ -163,6 +165,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     guideText += `${guide.offlineNotice}\n`;
     guideText += `=================================================================\n`;
     guideText += `Currency Counter • 100% Client-Side Local Ledger\n`;
+    guideText += `App Link: https://currency-counter.ai.studio\n`;
 
     const blob = new Blob([guideText], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
