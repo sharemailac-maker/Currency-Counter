@@ -38,10 +38,26 @@ export function getCachedHitStats(): AnonymousHitStats {
 }
 
 /**
+ * Detects search crawlers, headless audit tools, and bots (Googlebot, Bingbot, Lighthouse, etc.)
+ * Crawlers should never execute analytics/hit registration XHRs during page indexing.
+ */
+function isSearchBotOrCrawler(): boolean {
+  if (typeof navigator === 'undefined') return true;
+  if (navigator.webdriver) return true;
+  const ua = navigator.userAgent || '';
+  return /bot|crawler|spider|crawling|googlebot|bingbot|lighthouse|mediapartners|slurp|duckduckbot|baiduspider|yandexbot|sogou|exabot|headlesschrome/i.test(ua);
+}
+
+/**
  * Counts user ONLY when online.
  * If offline, waits until user gets online to register the count.
  */
 export async function recordAnonymousVisit(): Promise<AnonymousHitStats> {
+  // Do not execute network XHRs when Googlebot or search crawlers inspect page resources
+  if (isSearchBotOrCrawler()) {
+    return getCachedHitStats();
+  }
+
   const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : false;
 
   // If user is currently offline, attach one-time online listener
@@ -105,6 +121,9 @@ export async function recordAnonymousVisit(): Promise<AnonymousHitStats> {
  */
 export async function fetchLatestHitCount(): Promise<AnonymousHitStats> {
   let totalHits = getCachedHitStats().totalHits;
+  if (isSearchBotOrCrawler()) {
+    return { totalHits, isOnline: true };
+  }
   const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : false;
 
   if (isOnline) {

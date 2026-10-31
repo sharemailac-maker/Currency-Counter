@@ -20,6 +20,7 @@ import {
 import { formatCurrencyAmount } from '../utils/formatters';
 import { copyToClipboard } from '../utils/clipboard';
 import { FinancialCalculators } from './FinancialCalculators';
+import { GiftFooter } from './GiftFooter';
 
 interface ConversionViewProps {
   currentCountry: CountryCurrency;
@@ -1149,6 +1150,9 @@ export const ConversionView: React.FC<ConversionViewProps> = ({
       </div>
       </div>
       )}
+
+      {/* Dedicated Footer: Gift from Yatinkumar Chauhan */}
+      <GiftFooter className="mt-8 mb-4" />
     </div>
   );
 };

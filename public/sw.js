@@ -30,8 +30,14 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Only handle GET requests and skip API endpoints
-  if (event.request.method !== 'GET' || event.request.url.includes('/api/')) return;
+  // Only handle same-origin GET requests and skip API endpoints
+  if (
+    event.request.method !== 'GET' ||
+    !event.request.url.startsWith(self.location.origin) ||
+    event.request.url.includes('/api/')
+  ) {
+    return;
+  }
 
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {

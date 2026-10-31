@@ -1,25 +1,56 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { COUNTRIES } from './data/currencies';
 import { CountryCurrency, Denomination, DenominationCounts, SavedTally } from './types';
 import { numberToWords } from './utils/numberToWords';
 import { Header } from './components/Header';
 import { DenominationRow } from './components/DenominationRow';
 import { SummaryStickyBar } from './components/SummaryStickyBar';
-import { CountrySelectorModal } from './components/CountrySelectorModal';
-import { BreakdownModal } from './components/BreakdownModal';
-import { SavedTalliesModal } from './components/SavedTalliesModal';
-import { AddCustomDenominationModal } from './components/AddCustomDenominationModal';
-import { SaveTallyDialog, SaveTallyFormData } from './components/SaveTallyDialog';
-import { EarthGlobeLanding } from './components/EarthGlobeLanding';
 import { BottomNavBar, AppNavTab } from './components/BottomNavBar';
-import { HistoryView } from './components/HistoryView';
-import { ConversionView } from './components/ConversionView';
-import { SettingsView } from './components/SettingsView';
 import { GiftFooter } from './components/GiftFooter';
-import { ResetConfirmModal } from './components/ResetConfirmModal';
-import { DeleteConfirmModal } from './components/DeleteConfirmModal';
-import { FeedbackModal } from './components/FeedbackModal';
 import { FeedbackPromptBanner } from './components/FeedbackPromptBanner';
+import type { SaveTallyFormData } from './components/SaveTallyDialog';
+
+// Dynamic lazy imports for instant initial paint and lightning-speed app startup
+const EarthGlobeLanding = React.lazy(() => import('./components/EarthGlobeLanding').then(m => ({ default: m.EarthGlobeLanding })));
+const HistoryView = React.lazy(() => import('./components/HistoryView').then(m => ({ default: m.HistoryView })));
+const ConversionView = React.lazy(() => import('./components/ConversionView').then(m => ({ default: m.ConversionView })));
+const SettingsView = React.lazy(() => import('./components/SettingsView').then(m => ({ default: m.SettingsView })));
+const CountrySelectorModal = React.lazy(() => import('./components/CountrySelectorModal').then(m => ({ default: m.CountrySelectorModal })));
+const BreakdownModal = React.lazy(() => import('./components/BreakdownModal').then(m => ({ default: m.BreakdownModal })));
+const SavedTalliesModal = React.lazy(() => import('./components/SavedTalliesModal').then(m => ({ default: m.SavedTalliesModal })));
+const AddCustomDenominationModal = React.lazy(() => import('./components/AddCustomDenominationModal').then(m => ({ default: m.AddCustomDenominationModal })));
+const SaveTallyDialog = React.lazy(() => import('./components/SaveTallyDialog').then(m => ({ default: m.SaveTallyDialog })));
+const ResetConfirmModal = React.lazy(() => import('./components/ResetConfirmModal').then(m => ({ default: m.ResetConfirmModal })));
+const DeleteConfirmModal = React.lazy(() => import('./components/DeleteConfirmModal').then(m => ({ default: m.DeleteConfirmModal })));
+const FeedbackModal = React.lazy(() => import('./components/FeedbackModal').then(m => ({ default: m.FeedbackModal })));
+
+function GlobeLoadingSkeleton() {
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center p-6 bg-stone-950 text-white min-h-[75vh]">
+      <div className="relative w-44 h-44 sm:w-60 sm:h-60 flex items-center justify-center mb-6">
+        <div className="absolute inset-0 rounded-full bg-emerald-500/20 blur-xl animate-pulse" />
+        <div className="w-36 h-36 sm:w-48 sm:h-48 rounded-full border-2 border-emerald-500/30 border-t-emerald-400 animate-spin flex items-center justify-center">
+          <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-full border border-teal-500/20 border-b-teal-400 animate-spin [animation-direction:reverse]" />
+        </div>
+        <div className="absolute flex flex-col items-center justify-center">
+          <span className="text-4xl select-none">🌍</span>
+        </div>
+      </div>
+      <div className="text-center space-y-1.5">
+        <h2 className="text-base font-bold text-emerald-400 tracking-wide">Currency Counter</h2>
+        <p className="text-xs text-stone-400">Loading fast offline cash counter...</p>
+      </div>
+    </div>
+  );
+}
+
+function ViewLoadingSkeleton() {
+  return (
+    <div className="flex-1 flex items-center justify-center p-12 min-h-[40vh]">
+      <div className="w-7 h-7 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+}
 import { Banknote, Coins, Layers, Undo2, ArrowLeftRight, FileText, Smartphone, X } from 'lucide-react';
 import { playChimeSound, playTapSound } from './utils/audio';
 import { usePWAInstall } from './hooks/usePWAInstall';
@@ -487,12 +518,14 @@ export default function App() {
       {/* TAB 1: HOME (Interactive Circular Earth Globe & Alphabetical Country Launcher) */}
       {currentTab === 'home' && (
         <div className="pb-16 flex-1 flex flex-col">
-          <EarthGlobeLanding
-            selectedCountry={selectedCountry}
-            onSelectCountryAndLaunch={handleSelectCountryFromEarth}
-            onResumeCalculator={() => setCurrentTab('counter')}
-            hasExistingCounts={hasCounts}
-          />
+          <Suspense fallback={<GlobeLoadingSkeleton />}>
+            <EarthGlobeLanding
+              selectedCountry={selectedCountry}
+              onSelectCountryAndLaunch={handleSelectCountryFromEarth}
+              onResumeCalculator={() => setCurrentTab('counter')}
+              hasExistingCounts={hasCounts}
+            />
+          </Suspense>
         </div>
       )}
 
@@ -634,50 +667,56 @@ export default function App() {
       {/* TAB 3: HISTORY (Date, Month, and Year-wise views for multi-year tracking) */}
       {currentTab === 'history' && (
         <div className="flex-1 pb-16">
-          <HistoryView
-            tallies={savedTallies}
-            onLoadTally={handleLoadTally}
-            onDeleteTally={handleDeleteTally}
-            onClearAllTallies={handleClearAllTallies}
-            onSelectReceiptTally={(tally) => setReceiptTally(tally)}
-            allCountries={COUNTRIES}
-            companyModeEnabled={companyModeEnabled}
-          />
+          <Suspense fallback={<ViewLoadingSkeleton />}>
+            <HistoryView
+              tallies={savedTallies}
+              onLoadTally={handleLoadTally}
+              onDeleteTally={handleDeleteTally}
+              onClearAllTallies={handleClearAllTallies}
+              onSelectReceiptTally={(tally) => setReceiptTally(tally)}
+              allCountries={COUNTRIES}
+              companyModeEnabled={companyModeEnabled}
+            />
+          </Suspense>
         </div>
       )}
 
       {/* TAB 4: CONVERSION (Currency Converter & Financial Calculators) */}
       {currentTab === 'conversion' && (
         <div className="flex-1 pb-16">
-          <ConversionView
-            currentCountry={selectedCountry}
-            allCountries={COUNTRIES}
-            counterTotalAmount={totalAmount}
-            onNavigateToCounter={() => setCurrentTab('counter')}
-            activeCalculator={activeCalculator}
-            onNavigateToSettings={() => setCurrentTab('settings')}
-          />
+          <Suspense fallback={<ViewLoadingSkeleton />}>
+            <ConversionView
+              currentCountry={selectedCountry}
+              allCountries={COUNTRIES}
+              counterTotalAmount={totalAmount}
+              onNavigateToCounter={() => setCurrentTab('counter')}
+              activeCalculator={activeCalculator}
+              onNavigateToSettings={() => setCurrentTab('settings')}
+            />
+          </Suspense>
         </div>
       )}
 
       {/* TAB 5: SETTINGS (Audio feedback, custom denominations, financial calculator selection, backup) */}
       {currentTab === 'settings' && (
         <div className="flex-1 pb-16">
-          <SettingsView
-            soundEnabled={soundEnabled}
-            onToggleSound={setSoundEnabled}
-            selectedCountry={selectedCountry}
-            onOpenCountryModal={() => setIsCountryModalOpen(true)}
-            customDenominations={customDenominations}
-            onDeleteCustomDenomination={handleDeleteCustomDenomination}
-            onOpenCustomDenomModal={() => setIsCustomModalOpen(true)}
-            savedTallies={savedTallies}
-            onImportTallies={(imported) => setSavedTallies((prev) => [...imported, ...prev])}
-            onClearAllTallies={handleClearAllTallies}
-            onResetActiveCounter={handleReset}
-            activeCalculator={activeCalculator}
-            onCalculatorChanged={setActiveCalculator}
-          />
+          <Suspense fallback={<ViewLoadingSkeleton />}>
+            <SettingsView
+              soundEnabled={soundEnabled}
+              onToggleSound={setSoundEnabled}
+              selectedCountry={selectedCountry}
+              onOpenCountryModal={() => setIsCountryModalOpen(true)}
+              customDenominations={customDenominations}
+              onDeleteCustomDenomination={handleDeleteCustomDenomination}
+              onOpenCustomDenomModal={() => setIsCustomModalOpen(true)}
+              savedTallies={savedTallies}
+              onImportTallies={(imported) => setSavedTallies((prev) => [...imported, ...prev])}
+              onClearAllTallies={handleClearAllTallies}
+              onResetActiveCounter={handleReset}
+              activeCalculator={activeCalculator}
+              onCalculatorChanged={setActiveCalculator}
+            />
+          </Suspense>
         </div>
       )}
 
@@ -692,196 +731,121 @@ export default function App() {
         savedTalliesCount={savedTallies.length}
       />
 
-      {/* Country Selector Modal */}
-      <CountrySelectorModal
-        isOpen={isCountryModalOpen}
-        onClose={() => setIsCountryModalOpen(false)}
-        selectedCountryId={selectedCountry.id}
-        onSelectCountry={(c) => {
-          setSelectedCountry(c);
-          setUndoState(null);
-        }}
-      />
-
-      {/* Breakdown / Deposit Slip Modal */}
-      {isBreakdownModalOpen && (
-        <BreakdownModal
-          isOpen={true}
-          onClose={() => setIsBreakdownModalOpen(false)}
-          country={selectedCountry}
-          denominations={activeDenominations}
-          counts={currentCounts}
-          totalAmount={totalAmount}
-          totalNotes={totalNotes}
-          totalCoins={totalCoins}
-          totalPieces={totalPieces}
-          amountInWords={amountInWords}
+      {/* Modals & Dialogs (Loaded on demand for lightning-speed startup) */}
+      <Suspense fallback={null}>
+        {/* Country Selector Modal */}
+        <CountrySelectorModal
+          isOpen={isCountryModalOpen}
+          onClose={() => setIsCountryModalOpen(false)}
+          selectedCountryId={selectedCountry.id}
+          onSelectCountry={(c) => {
+            setSelectedCountry(c);
+            setUndoState(null);
+          }}
         />
-      )}
 
-      {/* Receipt Breakdown for a Historical Tally */}
-      {receiptTally && (
-        <BreakdownModal
-          isOpen={true}
-          onClose={() => setReceiptTally(null)}
-          title={receiptTally.title}
-          remark={receiptTally.remark}
-          employeeName={receiptTally.employeeName}
-          department={receiptTally.department}
-          country={
-            COUNTRIES.find((c) => c.id === receiptTally.countryId) || {
-              ...selectedCountry,
-              countryName: receiptTally.countryName,
-              currencyCode: receiptTally.currencyCode,
-              currencySymbol: receiptTally.currencySymbol,
+        {/* Breakdown / Deposit Slip Modal */}
+        {isBreakdownModalOpen && (
+          <BreakdownModal
+            isOpen={true}
+            onClose={() => setIsBreakdownModalOpen(false)}
+            country={selectedCountry}
+            denominations={activeDenominations}
+            counts={currentCounts}
+            totalAmount={totalAmount}
+            totalNotes={totalNotes}
+            totalCoins={totalCoins}
+            totalPieces={totalPieces}
+            amountInWords={amountInWords}
+          />
+        )}
+
+        {/* Receipt Breakdown for a Historical Tally */}
+        {receiptTally && (
+          <BreakdownModal
+            isOpen={true}
+            onClose={() => setReceiptTally(null)}
+            title={receiptTally.title}
+            remark={receiptTally.remark}
+            employeeName={receiptTally.employeeName}
+            department={receiptTally.department}
+            country={
+              COUNTRIES.find((c) => c.id === receiptTally.countryId) || {
+                ...selectedCountry,
+                countryName: receiptTally.countryName,
+                currencyCode: receiptTally.currencyCode,
+                currencySymbol: receiptTally.currencySymbol,
+              }
             }
-          }
-          denominations={
-            (COUNTRIES.find((c) => c.id === receiptTally.countryId)?.denominations || activeDenominations)
-          }
-          counts={receiptTally.counts}
-          totalAmount={receiptTally.totalAmount}
-          totalNotes={receiptTally.totalNotes}
-          totalCoins={receiptTally.totalCoins}
-          totalPieces={receiptTally.totalPieces}
-          amountInWords={receiptTally.amountInWords}
+            denominations={
+              (COUNTRIES.find((c) => c.id === receiptTally.countryId)?.denominations || activeDenominations)
+            }
+            counts={receiptTally.counts}
+            totalAmount={receiptTally.totalAmount}
+            totalNotes={receiptTally.totalNotes}
+            totalCoins={receiptTally.totalCoins}
+            totalPieces={receiptTally.totalPieces}
+            amountInWords={receiptTally.amountInWords}
+          />
+        )}
+
+        {/* Saved Tallies Quick Modal (kept for legacy shortcuts) */}
+        <SavedTalliesModal
+          isOpen={isHistoryModalOpen}
+          onClose={() => setIsHistoryModalOpen(false)}
+          tallies={savedTallies}
+          onLoadTally={(t) => {
+            handleLoadTally(t);
+            setIsHistoryModalOpen(false);
+          }}
+          onDeleteTally={handleDeleteTally}
+          onClearAllTallies={handleClearAllTallies}
         />
-      )}
 
-      {/* Saved Tallies Quick Modal (kept for legacy shortcuts) */}
-      <SavedTalliesModal
-        isOpen={isHistoryModalOpen}
-        onClose={() => setIsHistoryModalOpen(false)}
-        tallies={savedTallies}
-        onLoadTally={(t) => {
-          handleLoadTally(t);
-          setIsHistoryModalOpen(false);
-        }}
-        onDeleteTally={handleDeleteTally}
-        onClearAllTallies={handleClearAllTallies}
-      />
-
-      {/* Add Custom Denomination Modal */}
-      <AddCustomDenominationModal
-        isOpen={isCustomModalOpen}
-        onClose={() => setIsCustomModalOpen(false)}
-        country={selectedCountry}
-        onAddDenomination={handleAddCustomDenomination}
-      />
-
-      {/* Save Tally Dialog */}
-      <SaveTallyDialog
-        isOpen={isSaveDialogOpen}
-        onClose={() => setIsSaveDialogOpen(false)}
-        country={selectedCountry}
-        totalAmount={totalAmount}
-        totalPieces={totalPieces}
-        onConfirmSave={handleConfirmSaveTally}
-        companyModeEnabled={companyModeEnabled}
-      />
-
-      {/* Reset Counter Confirmation Dialog (non-blocking in-app modal) */}
-      <ResetConfirmModal
-        isOpen={isResetModalOpen}
-        onClose={() => setIsResetModalOpen(false)}
-        onConfirm={handleConfirmReset}
-        country={selectedCountry}
-        totalPieces={totalPieces}
-      />
-
-      {/* Delete / Clear Action Confirmation Dialog (non-blocking in-app modal) */}
-      <DeleteConfirmModal
-        isOpen={deleteConfirmState.isOpen}
-        onClose={() => setDeleteConfirmState((prev) => ({ ...prev, isOpen: false }))}
-        onConfirm={deleteConfirmState.onConfirm}
-        title={deleteConfirmState.title}
-        description={deleteConfirmState.description}
-        confirmLabel={deleteConfirmState.confirmLabel}
-      />
-
-      {/* PWA Offline Install Timed Banner (Insisting for installation when accessing via link) */}
-      {showInstallPrompt && !isInstalled && (
-        <div className="fixed bottom-20 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-sm z-50 animate-in slide-in-from-bottom-5 duration-300">
-          <div className="p-4 rounded-2xl bg-stone-900/95 backdrop-blur-md border border-amber-400/60 shadow-2xl text-white">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <img
-                  src="/app-icon.png"
-                  alt="Currency Counter"
-                  className="w-10 h-10 rounded-xl object-cover border border-amber-400/70 shadow-xs shrink-0"
-                />
-                <div>
-                  <h4 className="text-xs font-bold text-amber-300">Install for Regular Offline Usage</h4>
-                  <p className="text-[11px] text-stone-300 leading-snug mt-0.5">
-                    You are accessing via browser link. Install this app to your device home screen for 100% offline cash counting anytime!
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  setShowInstallPrompt(false);
-                  sessionStorage.setItem('pwa_install_prompt_dismissed', 'true');
-                }}
-                className="text-stone-400 hover:text-white p-1"
-                title="Dismiss"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* iOS Specific Instructions Accordion */}
-            {showIOSInstructions && (
-              <div className="mt-3 p-2.5 rounded-xl bg-stone-800/90 border border-stone-700 text-[11px] text-stone-200 space-y-1">
-                <p className="font-bold text-amber-400">How to install on iOS Safari:</p>
-                <p>1. Tap the <span className="font-semibold text-white">Share</span> icon (square with arrow ↑) in Safari.</p>
-                <p>2. Scroll down and tap <span className="font-semibold text-white">&apos;Add to Home Screen&apos;</span>.</p>
-                <p>3. Tap <span className="font-semibold text-white">&apos;Add&apos;</span> to launch 100% offline anytime.</p>
-              </div>
-            )}
-
-            <div className="mt-3 flex items-center justify-end gap-2">
-              <button
-                onClick={() => {
-                  setShowInstallPrompt(false);
-                  sessionStorage.setItem('pwa_install_prompt_dismissed', 'true');
-                }}
-                className="px-3 py-1.5 rounded-lg text-xs text-stone-300 hover:text-white hover:bg-stone-800 transition"
-              >
-                Maybe Later
-              </button>
-              <button
-                onClick={() => {
-                  if (isIOS) {
-                    setShowIOSInstructions((prev) => !prev);
-                  } else {
-                    install();
-                    setShowInstallPrompt(false);
-                    sessionStorage.setItem('pwa_install_prompt_dismissed', 'true');
-                  }
-                }}
-                className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-xs transition flex items-center gap-1.5 cursor-pointer active:scale-95"
-              >
-                <Smartphone className="w-3.5 h-3.5" />
-                <span>{isIOS ? (showIOSInstructions ? 'Hide Guide' : 'Install Guide') : 'Install App'}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* In-app Notification for Returning Visitors */}
-      {showFeedbackPrompt && (
-        <FeedbackPromptBanner
-          onOpenFeedback={() => setIsFeedbackModalOpen(true)}
-          onDismiss={() => setShowFeedbackPrompt(false)}
+        {/* Add Custom Denomination Modal */}
+        <AddCustomDenominationModal
+          isOpen={isCustomModalOpen}
+          onClose={() => setIsCustomModalOpen(false)}
+          country={selectedCountry}
+          onAddDenomination={handleAddCustomDenomination}
         />
-      )}
 
-      {/* Global In-app Feedback Modal */}
-      <FeedbackModal
-        isOpen={isFeedbackModalOpen}
-        onClose={() => setIsFeedbackModalOpen(false)}
-      />
+        {/* Save Tally Dialog */}
+        <SaveTallyDialog
+          isOpen={isSaveDialogOpen}
+          onClose={() => setIsSaveDialogOpen(false)}
+          country={selectedCountry}
+          totalAmount={totalAmount}
+          totalPieces={totalPieces}
+          onConfirmSave={handleConfirmSaveTally}
+          companyModeEnabled={companyModeEnabled}
+        />
+
+        {/* Reset Counter Confirmation Dialog (non-blocking in-app modal) */}
+        <ResetConfirmModal
+          isOpen={isResetModalOpen}
+          onClose={() => setIsResetModalOpen(false)}
+          onConfirm={handleConfirmReset}
+          country={selectedCountry}
+          totalPieces={totalPieces}
+        />
+
+        {/* Delete / Clear Action Confirmation Dialog (non-blocking in-app modal) */}
+        <DeleteConfirmModal
+          isOpen={deleteConfirmState.isOpen}
+          onClose={() => setDeleteConfirmState((prev) => ({ ...prev, isOpen: false }))}
+          onConfirm={deleteConfirmState.onConfirm}
+          title={deleteConfirmState.title}
+          description={deleteConfirmState.description}
+          confirmLabel={deleteConfirmState.confirmLabel}
+        />
+
+        {/* Global In-app Feedback Modal */}
+        <FeedbackModal
+          isOpen={isFeedbackModalOpen}
+          onClose={() => setIsFeedbackModalOpen(false)}
+        />
+      </Suspense>
     </div>
   );
 }

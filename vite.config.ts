@@ -32,6 +32,14 @@ export default defineConfig(() => {
           chunkFileNames: 'assets/c-[hash].js',
           entryFileNames: 'assets/e-[hash].js',
           assetFileNames: 'assets/a-[hash].[ext]',
+          manualChunks(id) {
+            if (id.includes('node_modules/three')) {
+              return 'vendor-three';
+            }
+            if (id.includes('node_modules/lucide-react')) {
+              return 'vendor-icons';
+            }
+          },
         },
       },
     },

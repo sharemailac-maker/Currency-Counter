@@ -1,4 +1,5 @@
 import express, { Request, Response, NextFunction } from 'express';
+import compression from 'compression';
 import path from 'path';
 import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
@@ -121,17 +122,20 @@ async function startServer() {
   // 1. Remove identifying server headers to prevent hacker reconnaissance
   app.disable('x-powered-by');
 
+  // Fast gzip/deflate compression for lightning-speed initial page and asset loads
+  app.use(compression());
+
   // 2. Strict Security Headers & CSP
   app.use((req: Request, res: Response, next: NextFunction) => {
-    // Content Security Policy: Protect against XSS while allowing embedding in AI Studio preview
+    // Content Security Policy: Protect against XSS while allowing embedding in AI Studio preview and Google Tag Manager
     res.setHeader(
       'Content-Security-Policy',
       "default-src 'self'; " +
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com; " +
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://*.googletagmanager.com https://tagmanager.google.com https://www.google-analytics.com https://*.google-analytics.com https://*.google.com; " +
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.googletagmanager.com https://tagmanager.google.com; " +
       "font-src 'self' data: https://fonts.gstatic.com; " +
-      "img-src 'self' data: blob: https://www.google-analytics.com https://*.google-analytics.com; " +
-      "connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com; " +
+      "img-src 'self' data: blob: https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://*.googletagmanager.com https://*.analytics.google.com https://analytics.google.com https://stats.g.doubleclick.net https://*.g.doubleclick.net https://*.google.com; " +
+      "connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://*.googletagmanager.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://*.g.doubleclick.net https://*.google.com; " +
       "frame-ancestors 'self' https://ai.studio https://*.google.com https://*.googleusercontent.com https://*.run.app; " +
       "object-src 'none'; " +
       "base-uri 'self'; " +
@@ -143,6 +147,9 @@ async function startServer() {
 
     // Cross-site scripting filter
     res.setHeader('X-XSS-Protection', '1; mode=block');
+
+    // Cross-Origin Resource Policy: Allow sandboxed crawlers & WebGL to load static assets safely
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
 
     // Protect referrer leakage
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
@@ -254,13 +261,24 @@ async function startServer() {
     return count;
   }
 
+  app.options('/api/hits', (req: Request, res: Response) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept');
+    res.sendStatus(204);
+  });
+
   app.get('/api/hits', (req: Request, res: Response) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cache-Control', 'no-store, max-age=0');
     const totalHits = readHitCount();
     res.json({ totalHits, anonymous: true });
   });
 
   const hitLimiter = createRateLimiter(60, 60 * 1000);
   app.post('/api/hits', hitLimiter, (req: Request, res: Response) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cache-Control', 'no-store, max-age=0');
     const totalHits = incrementHitCount();
     res.json({ totalHits, anonymous: true, success: true });
   });
@@ -268,7 +286,9 @@ async function startServer() {
   // Search Engine & Crawler Endpoints for Google Search Console
   app.get('/robots.txt', (req: Request, res: Response) => {
     res.type('text/plain');
-    res.send(`User-agent: *\nAllow: /\n\nSitemap: https://currency-counter.ai.studio/sitemap.xml\n`);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.send(`User-agent: *\nAllow: /\nDisallow: /api/\n\nSitemap: https://currency-counter.ai.studio/sitemap.xml\n`);
   });
 
   app.get('/sitemap.xml', (req: Request, res: Response) => {
@@ -342,16 +362,22 @@ async function startServer() {
 
       // 2. Relay via masked endpoint strictly on server: raw recipient email is never stored or exposed
       const relayTarget = getMaskedRelayEndpoint();
+      let relaySuccess = false;
+      let relayMsg = '';
+
       try {
-        await fetch(`https://formsubmit.co/ajax/${relayTarget}`, {
+        const response = await fetch(`https://formsubmit.co/ajax/${relayTarget}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
+            'Origin': 'https://currency-counter.ai.studio',
+            'Referer': 'https://currency-counter.ai.studio/',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
           },
           body: JSON.stringify({
             _subject: `[Currency Counter Feedback] ${sanitizedTopic} from ${sanitizedName}`,
-            _replyto: sanitizedEmail || 'no-reply@currency-counter.internal',
+            _replyto: sanitizedEmail || undefined,
             _template: 'table',
             _captcha: 'false',
             Sender_Name: sanitizedName,
@@ -362,13 +388,23 @@ async function startServer() {
             Timestamp: feedbackEntry.timestamp,
           }),
         });
-      } catch {
-        // server relay fallback
+
+        const resData = (await response.json().catch(() => null)) as { success?: string | boolean; message?: string } | null;
+        if (response.ok && (resData?.success === 'true' || resData?.success === true)) {
+          relaySuccess = true;
+          relayMsg = resData?.message || 'Delivered';
+          console.log('[Feedback Relay Success]', relayMsg);
+        } else {
+          console.warn('[Feedback Relay Warning]', response.status, resData);
+        }
+      } catch (err: unknown) {
+        console.error('[Feedback Relay Error]', err instanceof Error ? err.message : String(err));
       }
 
       res.status(200).json({
         success: true,
-        message: 'Feedback securely received and forwarded.',
+        relayed: relaySuccess,
+        message: 'Feedback securely received and saved.',
       });
     } catch {
       res.status(500).json({ error: 'Internal server error processing feedback' });
@@ -419,6 +455,23 @@ async function startServer() {
   // VITE MIDDLEWARE (Development) & STATIC SERVING (Production)
   // ============================================================================
 
+  const staticOptions = {
+    maxAge: '1d',
+    setHeaders: (res: Response, filePath: string) => {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Timing-Allow-Origin', '*');
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+      if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      } else if (filePath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+      }
+    },
+  };
+
+  const publicPath = path.join(process.cwd(), 'public');
+  app.use(express.static(publicPath, staticOptions));
+
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -427,7 +480,7 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
+    app.use(express.static(distPath, staticOptions));
     app.get('*', (req: Request, res: Response) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });

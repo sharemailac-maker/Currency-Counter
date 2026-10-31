@@ -276,6 +276,7 @@ export const EarthGlobeLanding: React.FC<EarthGlobeLandingProps> = ({
     const sphereGeom = new THREE.SphereGeometry(radius, 64, 64);
 
     const textureLoader = new THREE.TextureLoader();
+    textureLoader.setCrossOrigin('anonymous');
     // Load local NASA Earth texture
     const earthTexture = textureLoader.load(
       '/assets/earth_texture.jpg',
