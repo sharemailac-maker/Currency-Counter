@@ -293,7 +293,9 @@ async function startServer() {
 
   app.get('/sitemap.xml', (req: Request, res: Response) => {
     res.type('application/xml');
-    res.send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url>\n    <loc>https://currency-counter.ai.studio/</loc>\n    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>1.0</priority>\n  </url>\n</urlset>\n`);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n  <url>\n    <loc>https://currency-counter.ai.studio/</loc>\n    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>1.0</priority>\n    <image:image>\n      <image:loc>https://currency-counter.ai.studio/app-icon.png</image:loc>\n      <image:title>Currency Counter - Cash Denomination Counter &amp; Financial Calculators</image:title>\n      <image:caption>Cash denomination tally counter, currency converter, and financial calculators for 47+ countries.</image:caption>\n    </image:image>\n  </url>\n</urlset>\n`);
   });
 
   // Internal masked vault resolver: dynamically decodes recipient endpoint at runtime in ephemeral memory.

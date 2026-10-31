@@ -1,6 +1,6 @@
 {
   "name": "Currency Counter",
-  "description": "An offline mobile currency and cash denomination counter supporting global banknotes and coins with real-time totals and breakdown.",
+  "description": "Free offline cash denomination counter for 47+ countries (USD, INR, EUR, GBP, AED, SAR). Calculate banknotes & coins, FD, SIP, RD, and Loan EMI with breakdown.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
