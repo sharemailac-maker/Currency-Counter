@@ -1,79 +1,81 @@
 # 🪙 Currency Counter
 
-> **Professional Offline Cash Denomination Counter & Financial Calculators Suite supporting 47+ Global Currencies.**
+> **Professional Offline Cash Denomination Counter & Institutional Financial Calculators Suite supporting 47+ Global Currencies.**
 
 ---
 
-### ⚠️ Legal Notice & License Restriction
+### ⚠️ Legal Notice & Anti-Reverse Engineering Protection
 > **Written permission is strictly required from the maker for every personal and professional use of this project and its contents.**
 >
-> All intellectual property, source code, design assets, and materials contained in this repository are proprietary. No personal, commercial, educational, or professional use, deployment, redistribution, modification, or inclusion in third-party products is allowed without prior written consent from the maker. Please refer to the [LICENSE](./LICENSE) file for complete terms.
+> All intellectual property, algorithms, dataset configurations, designs, and source code are strictly proprietary.
+> - **No Unauthorized Use**: Personal, commercial, educational, or professional use without prior written consent from the maker is prohibited.
+> - **Anti-Reverse Engineering**: Decompiling, reverse engineering, disassembling, cloning, scraping, or creating derivative works from this repository, its assets, or its deployed bundles is strictly forbidden under applicable intellectual property laws.
+> - Refer to the [LICENSE](./LICENSE) for full proprietary terms.
 
 ---
 
-## 📌 Overview
+## 📌 Project Overview
 
-**Currency Counter** is a high-performance, offline-first web and mobile application designed for retail cashiers, accountants, treasury managers, travelers, and businesses worldwide. It eliminates manual cash tally errors by providing real-time banknote and coin denomination calculations, amount-in-words conversion, cashier slip printing, and a full suite of institutional financial calculators.
+**Currency Counter** is a high-precision, offline-first financial utility and cash reconciliation platform built for banking institutions, retail cashiers, corporate accountants, treasury teams, currency exchange desks, and international travelers. 
+
+It streamlines daily cash handling by automatically calculating total currency value, piece counts, and denomination breakdowns in real time, accompanied by automatic amount-in-words conversion in both Indian and International numbering conventions. In addition to denomination tallying, the application integrates four institutional financial calculators and live/offline multi-currency exchange conversion.
 
 ---
 
-## 🌟 Key Features
+## 🌟 Core Features & Modules
 
 ### 1. 💵 Cash Denomination Counter
-* **Banknote & Coin Counting**: Quick denomination inputs with intuitive increment/decrement controls.
-* **Dual Numbering Systems**: Real-time amount-in-words conversion in both:
-  * **Indian Numbering System** (Rupees, Lakhs, Crores, Paise).
-  * **International System** (Dollars/Euros/Pounds, Millions, Billions, Cents).
-* **Custom Denominations**: Add custom cash or token values on the fly.
-* **Denomination Statuses**: Tag denominations as standard *Circulation*, *Rare collector*, or *Delisted* notes.
-* **Cash Closing & Slip Printing**: Generate clean, professional receipts and tally summaries with employee names, departments, date/time, and remarks.
+* **Real-Time Note & Coin Tallying**: Interactive counter with instant total recalculation and quick-fill bundle triggers (+10, +50, +100).
+* **Dual Numbering Systems**:
+  * **Indian Numbering Format**: Formats totals in Lakhs and Crores with precise words conversion (e.g., *₹1,25,000 – One Lakh Twenty Five Thousand Rupees*).
+  * **International Numbering Format**: Formats totals in Millions and Billions with fractional sub-units (e.g., *$1,250,000 – One Million Two Hundred Fifty Thousand Dollars*).
+* **Custom Denomination Engine**: Allows cashiers to inject custom bills, token currencies, or commemorative values.
+* **Denomination Status Categorization**: Supports active *Circulation*, *Rare collector*, and *Delisted* banknotes.
+* **Professional Slip Printing & Export**: One-tap generation of cash deposit and shift-closing slips formatted with employee name, badge ID, department, timestamps, and denomination tallies.
 
 ### 2. 🧮 Institutional Financial Calculators
 * **Fixed Deposit (FD) Calculator**:
-  * Simple and Compound Interest calculations.
-  * Flexible compounding frequencies: Monthly, Quarterly, Half-Yearly, and Yearly.
-  * Real-time breakdown of maturity amount, principal invested, and total interest earned.
+  * Calculates Simple and Compound Interest maturities.
+  * Configurable compounding periods: Monthly, Quarterly, Half-Yearly, and Annually.
+  * Visualizes invested principal against accumulated interest returns.
 * **SIP (Systematic Investment Plan) Wealth Calculator**:
-  * Projects long-term wealth accumulation for mutual funds and monthly investment plans.
-  * Calculates invested capital, expected returns, and maturity corpus.
+  * Projects long-term wealth compounding for recurring mutual funds and investment portfolios.
+  * Computes total capital deployed, estimated returns, and final maturity corpus.
 * **Recurring Deposit (RD) Calculator**:
-  * Calculates maturity values for monthly recurring bank deposits.
+  * Computes maturity valuations and yield for term recurring bank deposits.
 * **Loan EMI Calculator**:
-  * Calculates monthly Equated Monthly Installments (EMI) for home loans, personal loans, or vehicle financing.
-  * Detailed payment breakdown between principal repayment and cumulative interest.
+  * Calculates monthly Equated Monthly Installments (EMI) for commercial loans, mortgages, home loans, and auto financing.
+  * Delivers comprehensive interest-to-principal distribution metrics.
 
 ### 3. 💱 Global Currency Converter
-* Instant currency exchange conversions across 47+ global currencies.
-* Pre-cached offline exchange rates ensuring zero downtime even without an active internet connection.
+* Instant exchange conversions between 47+ recognized world currencies.
+* Hybrid operation: operates with live market rates when connected and automatically switches to pre-cached offline exchange rates when disconnected.
 
 ### 4. 🌍 Interactive 3D Earth Globe
-* Built using **Three.js** with high-resolution texture mapping and atmospheric limb illumination.
-* Allows users to visually explore and select countries geographically with smooth camera transitions and coordinate pinning.
+* Rendered with **Three.js** using NASA Earth surface textures and atmospheric limb shading.
+* Interactive country navigation with spherical coordinate projection (`lat/lng` to 3D Cartesian coordinates) and smooth camera transitions.
 
 ### 5. 🏢 Cashier & Department Reconciliation
-* Organizes saved cash counts by department (Accounts & Finance, Retail, Treasury, Front Desk).
-* Multi-cashier management with employee ID tagging.
-* Aggregates total cash holdings, note distributions, and audit histories.
+* Segregates financial tallies across operational departments (Accounts & Finance, Retail, Treasury, Front Desk).
+* Multi-teller shift reconciliation and audit logging stored securely on the local device.
 
 ### 6. 📱 100% Offline Progressive Web App (PWA)
-* Offline-first architecture powered by Service Workers and Cache API.
-* Installable on desktop (Chrome, Edge, Safari) and mobile (Android, iOS) as a standalone app.
-* Ultra-fast load times with compressed assets and zero reliance on external cloud servers for daily operations.
+* Fully functional without any internet connectivity.
+* Zero data latency, instant startup, and installable on iOS, Android, macOS, and Windows.
 
-### 7. 🛡️ Enterprise-Grade Security Shield
-* **Zero Client Secrets**: All sensitive server operations (AI assistants, feedback relays) run exclusively behind secure server-side proxy routes.
-* **In-Memory Rate Limiting**: Protects against brute-force, DoS attacks, and automated spam.
-* **Prototype Pollution Neutralization**: Sanitizes incoming payloads to prevent object pollution vectors.
-* **Anti-Path Traversal Protection**: Rejects null-byte injections, directory traversals, and unauthorized file access.
-* **Strict Content-Security-Policy (CSP)**: Hardened headers to prevent cross-site scripting (XSS) and clickjacking.
+### 7. 🛡️ Enterprise Security & Hardening
+* **Server-Side Security Shield**: Defense against prototype pollution, path traversal attacks, and malformed inputs.
+* **Zero Client Secret Exposure**: No API keys, credentials, or administrative secrets are ever exposed in client-side code or browser bundles.
+* **Anti-Scraping & Rate Limiting**: Built-in memory rate limiters safeguard server-side endpoints against abusive scraping and automated spam.
+* **Strict Content-Security-Policy (CSP)**: Comprehensive CSP headers preventing XSS, clickjacking, and unauthorized third-party script execution.
 
 ---
 
 ## 🌐 Supported Countries & Currencies (47+ Nations)
 
-Currency Counter covers official currencies across 6 continents:
+Currency Counter maintains complete denomination matrices (banknotes and coins) for:
 
-| Continent | Countries & Currencies |
+| Continent | Countries & Supported Currencies |
 | :--- | :--- |
 | **Asia** | Bharat / India (`INR`), China (`CNY`), Japan (`JPY`), South Korea (`KRW`), Singapore (`SGD`), Malaysia (`MYR`), Indonesia (`IDR`), Vietnam (`VND`), Thailand (`THB`), Philippines (`PHP`), Bangladesh (`BDT`), Pakistan (`PKR`), Sri Lanka (`LKR`), Nepal (`NPR`), Hong Kong (`HKD`) |
 | **Europe** | Eurozone 19+ Countries (`EUR`), United Kingdom (`GBP`), Switzerland (`CHF`), Norway (`NOK`), Sweden (`SEK`), Denmark (`DKK`), Poland (`PLN`), Russia (`RUB`), Turkey (`TRY`) |
@@ -84,132 +86,36 @@ Currency Counter covers official currencies across 6 continents:
 
 ---
 
-## 🛠️ Tech Stack
+## 🏗️ Architecture & Technology Stack
 
-* **Frontend**:
-  * [React 19](https://react.dev/) – Modern component architecture
-  * [TypeScript](https://www.typescriptlang.org/) – Strict type safety
-  * [Tailwind CSS v4](https://tailwindcss.com/) – Responsive modern styling
-  * [Lucide React](https://lucide.dev/) – Crisp vector iconography
-  * [Three.js](https://threejs.org/) – WebGL 3D Earth Globe rendering
-  * [Motion](https://motion.dev/) – Smooth UI micro-interactions
-* **Backend & Server**:
-  * [Node.js](https://nodejs.org/) & [Express](https://expressjs.com/) – Full-stack backend server
-  * [tsx](https://github.com/privatenumber/tsx) – Native TypeScript execution
-  * [compression](https://github.com/expressjs/compression) – Gzip / Deflate payload optimization
-* **Tooling & Build**:
-  * [Vite 6](https://vitejs.dev/) – Ultra-fast development and build pipeline
-  * [esbuild](https://esbuild.github.io/) – Server-side production bundling
-
----
-
-## 📂 Project Structure
-
-```text
-├── public/                 # Static assets, icons, manifest, service worker & sitemaps
-│   ├── app-icon.png        # Master application icon
-│   ├── assets/             # Textures (NASA Earth texture, etc.)
-│   ├── manifest.webmanifest# PWA manifest
-│   ├── robots.txt          # Search engine crawler directives
-│   ├── sitemap.xml         # SEO sitemap with Google image indexing
-│   └── sw.js               # Service Worker for 100% offline functionality
-├── src/
-│   ├── components/         # Modular React UI components
-│   │   ├── ConversionView.tsx          # Multi-currency exchange converter
-│   │   ├── DenominationRow.tsx         # Note & coin counter row item
-│   │   ├── DepartmentAnalysisView.tsx  # Department & cashier breakdown
-│   │   ├── EarthGlobeLanding.tsx       # 3D Three.js interactive Earth globe
-│   │   ├── FinancialCalculators.tsx    # FD, SIP, RD, and Loan EMI calculators
-│   │   ├── HistoryView.tsx             # Saved tallies history and search
-│   │   └── SummaryStickyBar.tsx        # Real-time sticky total & figures bar
-│   ├── data/               # 47+ country currencies and coordinates
-│   │   ├── countriesAfricaOceania.ts
-│   │   ├── countriesAmericas.ts
-│   │   ├── countriesAsia.ts
-│   │   ├── countriesEurope.ts
-│   │   ├── countriesMiddleEast.ts
-│   │   └── currencies.ts
-│   ├── utils/              # Calculation engines & security helpers
-│   │   ├── anonymousHitCounter.ts      # Privacy-first visit counters
-│   │   ├── numberToWords.ts            # Indian & International number-to-words
-│   │   └── security.ts                 # Input sanitization and HTML escaping
-│   ├── App.tsx             # Root application orchestrator
-│   ├── main.tsx            # React DOM mounting entry point
-│   └── types.ts            # Master TypeScript type definitions
-├── server.ts               # Secure Express backend server with security headers
-├── .env.example            # Sample environment configuration template
-├── package.json            # Project dependencies and build scripts
-├── tsconfig.json           # TypeScript configuration
-├── vite.config.ts          # Vite build and bundle configuration
-├── LICENSE                 # Proprietary license agreement
-└── README.md               # Repository documentation
-```
+* **Client Layer**:
+  * React 19 (Functional architecture & hooks)
+  * TypeScript (Strict type system)
+  * Tailwind CSS v4 (Modern responsive utility system)
+  * Lucide Icons (Vector UI glyphs)
+  * Three.js (WebGL 3D surface mapping)
+* **Server & Routing**:
+  * Node.js & Express
+  * Gzip & Deflate payload compression
+  * In-memory token-bucket rate limiters
+* **Production Packaging**:
+  * Multi-layer code minification, identifier mangling, and comment stripping
+  * Non-revealing hashed chunk naming to impede structural analysis
 
 ---
 
-## 🚀 Getting Started
+## 🔒 Data Privacy Commitment
 
-### Prerequisites
-* **Node.js**: v18.0.0 or higher
-* **npm**: v9.0.0 or higher (or pnpm / yarn)
-
-### 1. Clone & Install
-```bash
-# Clone the repository
-git clone https://github.com/<your-username>/<your-repo-name>.git
-
-# Navigate into the project folder
-cd currency-counter
-
-# Install project dependencies
-npm install
-```
-
-### 2. Environment Setup
-Copy the `.env.example` file to create your local `.env`:
-```bash
-cp .env.example .env
-```
-*(Optional: If utilizing server-side Gemini AI features, configure `GEMINI_API_KEY` in `.env`)*
-
-### 3. Run in Development Mode
-Start the development server with Vite hot-reloading:
-```bash
-npm run dev
-```
-Open your browser and navigate to `http://localhost:3000`.
-
-### 4. Production Build & Deployment
-To generate an optimized production bundle:
-```bash
-# Build frontend assets and bundle the server
-npm run build
-
-# Start the production server
-npm start
-```
-
-### 5. Typecheck & Verification
-Run the TypeScript compiler to verify zero lint or type errors:
-```bash
-npm run lint
-```
+* **Local Data Sovereignty**: All cash tallies, notes breakdowns, and financial computations remain strictly on the client device.
+* **No User Tracking**: The application does not collect, track, or share any personal identity, financial balances, or device records.
 
 ---
 
-## 🔒 Privacy & Data Confidentiality
+## 📜 Written Permission & Licensing Inquiries
 
-* **100% Offline Operation**: Your financial tallies, employee records, and cash balances remain strictly on your local device.
-* **No Tracking or Personal Profiling**: Zero personal identity data is collected, monitored, or transmitted.
-* **Anonymous Statistics**: Server telemetry, if enabled, registers only aggregate numeric hit counts without IP or identifier logging.
+As stipulated in the [LICENSE](./LICENSE), **written permission from the maker is strictly required for every personal and professional use of this project and its contents.**
 
----
-
-## 📜 Written Permission Inquiries
-
-As stated in the [LICENSE](./LICENSE), **written permission is required from the maker for every personal and professional use of this project and its contents**.
-
-To request licensing, commercial deployment permission, or personal use authorization, please reach out directly to the project maker through the official **GitHub Repository Communications** (open an Issue or Discussion on GitHub).
+To request written permission, commercial licensing, or institutional deployment authorization, please reach out via official repository communications (GitHub Issues or Discussions).
 
 ---
 
