@@ -1,7 +1,8 @@
 {
-  "name": "react-example",
+  "name": "currency-counter",
+  "version": "1.0.0",
+  "description": "Professional offline cash denomination counter and financial calculators supporting 47+ global currencies.",
   "private": true,
-  "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
