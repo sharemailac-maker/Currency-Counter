@@ -19,6 +19,10 @@ export default defineConfig(() => {
       drop: ['debugger' as const],
       pure: ['console.log', 'console.debug', 'console.info'],
       legalComments: 'none' as const,
+      minifyIdentifiers: true,
+      minifySyntax: true,
+      minifyWhitespace: true,
+      treeShaking: true,
     },
     build: {
       sourcemap: false,
@@ -28,6 +32,10 @@ export default defineConfig(() => {
       rollupOptions: {
         output: {
           compact: true,
+          generatedCode: {
+            preset: 'es2015',
+            symbols: false,
+          },
           // Generic hashed chunk names to hinder structural reverse engineering
           chunkFileNames: 'assets/c-[hash].js',
           entryFileNames: 'assets/e-[hash].js',

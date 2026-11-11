@@ -23,6 +23,10 @@ setInterval(() => {
       rateLimitStore.delete(ip);
     }
   }
+  // Hard memory cap to prevent memory exhaustion under spoofed IP flooding
+  if (rateLimitStore.size > 10000) {
+    rateLimitStore.clear();
+  }
 }, 5 * 60 * 1000);
 
 /**
@@ -176,6 +180,13 @@ async function startServer() {
       return;
     }
 
+    // Reject dangerous or reconnaissance HTTP methods (e.g. TRACE, TRACK, CONNECT)
+    const allowedMethods = ['GET', 'POST', 'HEAD', 'OPTIONS'];
+    if (!allowedMethods.includes(req.method)) {
+      res.status(405).json({ error: 'Method Not Allowed' });
+      return;
+    }
+
     // Block direct access to secrets, environment files, private server data, and git metadata
     // (Note: Do NOT block /src/* or Vite modules which are required in development)
     if (
@@ -185,7 +196,9 @@ async function startServer() {
       decodedPath === '/data' ||
       decodedPath === '/server.ts' ||
       decodedPath === '/dist/server.cjs' ||
-      decodedPath.includes('bun.lock')
+      decodedPath.includes('bun.lock') ||
+      decodedPath.includes('package.json') ||
+      decodedPath.includes('tsconfig')
     ) {
       res.status(403).json({ error: 'Access denied to protected server resources' });
       return;
@@ -223,6 +236,8 @@ async function startServer() {
   // ANONYMOUS USER & VISIT HIT COUNTER (ZERO PERSONAL DATA COLLECTED)
   // Strictly records aggregate hit counts when users visit the app.
   // ============================================================================
+  let memoryHitCount = 1256;
+
   function getHitCounterFile(): string {
     const dataDir = path.resolve(process.cwd(), 'data');
     if (!fs.existsSync(dataDir)) {
@@ -236,20 +251,25 @@ async function startServer() {
       const file = getHitCounterFile();
       if (fs.existsSync(file)) {
         const raw = JSON.parse(fs.readFileSync(file, 'utf8'));
-        if (typeof raw.totalHits === 'number') {
-          return raw.totalHits;
+        if (typeof raw.totalHits === 'number' && raw.totalHits > 0) {
+          memoryHitCount = Math.max(memoryHitCount, raw.totalHits);
+          return memoryHitCount;
         }
       }
     } catch {
       // fallback safe value
     }
-    return 1248;
+    return memoryHitCount;
   }
 
-  function incrementHitCount(): number {
+  function incrementHitCount(clientKnownCount?: number): number {
     const file = getHitCounterFile();
     let count = readHitCount();
+    if (typeof clientKnownCount === 'number' && clientKnownCount >= count && clientKnownCount < count + 1000) {
+      count = clientKnownCount;
+    }
     count += 1;
+    memoryHitCount = count;
     try {
       fs.writeFileSync(
         file,
@@ -275,11 +295,12 @@ async function startServer() {
     res.json({ totalHits, anonymous: true });
   });
 
-  const hitLimiter = createRateLimiter(60, 60 * 1000);
+  const hitLimiter = createRateLimiter(120, 60 * 1000);
   app.post('/api/hits', hitLimiter, (req: Request, res: Response) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Cache-Control', 'no-store, max-age=0');
-    const totalHits = incrementHitCount();
+    const clientKnown = typeof req.body?.clientKnownCount === 'number' ? req.body.clientKnownCount : undefined;
+    const totalHits = incrementHitCount(clientKnown);
     res.json({ totalHits, anonymous: true, success: true });
   });
 

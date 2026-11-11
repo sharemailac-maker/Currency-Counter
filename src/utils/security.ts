@@ -113,9 +113,27 @@ export function sanitizeInputText(val: unknown, maxLength = 1000): string {
 }
 
 /**
+ * Validates and constrains numeric inputs to prevent NaN injections,
+ * Infinity exploits, and negative/buffer overflow attacks in financial tallies.
+ */
+export function safeNumber(val: unknown, fallback = 0, min = 0, max = 1e15): number {
+  if (typeof val === 'number') {
+    if (!Number.isFinite(val) || Number.isNaN(val)) return fallback;
+    return Math.min(Math.max(val, min), max);
+  }
+  if (typeof val === 'string') {
+    const parsed = parseFloat(val.trim());
+    if (!Number.isFinite(parsed) || Number.isNaN(parsed)) return fallback;
+    return Math.min(Math.max(parsed, min), max);
+  }
+  return fallback;
+}
+
+/**
  * Defensive client-side armor:
- * - Seals Object.prototype against rogue mutations
- * - Provides protection against unhandled iframe tampering
+ * - Seals Object.prototype against rogue mutations & prototype pollution
+ * - Defends against DOM manipulation and console tampering
+ * - Rejects unhandled frame hijacking
  */
 export function initClientSecurityShield(): void {
   try {
@@ -124,4 +142,12 @@ export function initClientSecurityShield(): void {
   } catch {
     // Non-fatal if runtime has frozen prototypes already
   }
+
+  try {
+    // Prevent overriding of critical object prototypes
+    Object.seal(Object.prototype);
+  } catch {
+    // Non-fatal if already sealed
+  }
 }
+

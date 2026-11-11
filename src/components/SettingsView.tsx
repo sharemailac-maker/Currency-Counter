@@ -112,8 +112,22 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     fetchLatestHitCount().then((stats) => {
       if (isMounted) setHitStats(stats);
     });
+
+    const handleHitsUpdated = (e: Event) => {
+      const customEvent = e as CustomEvent<{ totalHits: number; isOnline: boolean }>;
+      if (isMounted && typeof customEvent.detail?.totalHits === 'number') {
+        setHitStats(prev => ({
+          ...prev,
+          totalHits: customEvent.detail.totalHits,
+          isOnline: customEvent.detail.isOnline ?? prev.isOnline,
+        }));
+      }
+    };
+
+    window.addEventListener('cc_hits_updated', handleHitsUpdated);
     return () => {
       isMounted = false;
+      window.removeEventListener('cc_hits_updated', handleHitsUpdated);
     };
   }, []);
 

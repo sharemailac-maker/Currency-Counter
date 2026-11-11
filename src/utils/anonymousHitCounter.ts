@@ -2,12 +2,14 @@
  * Anonymous Online User Count.
  * Strict Privacy:
  * - NO personal data is collected or transmitted.
- * - Counts only when user gets online.
- * - No device visit counters or identifiers.
+ * - Counts anonymous visits with 30-minute session windows.
+ * - Guarantees monotonic non-decreasing counts.
  */
 
 const STORAGE_KEY_CACHED_HITS = 'cc_cached_total_hits';
 const SESSION_KEY_COUNTED = 'cc_session_counted';
+const STORAGE_KEY_LAST_VISIT_TIME = 'cc_last_visit_time';
+const SESSION_DURATION_MS = 30 * 60 * 1000; // 30-minute standard visit session timeout
 
 let onlineListenerAttached = false;
 
@@ -20,12 +22,12 @@ export interface AnonymousHitStats {
  * Returns the currently cached hit count from localStorage.
  */
 export function getCachedHitStats(): AnonymousHitStats {
-  let cachedTotal = 1253;
+  let cachedTotal = 1256;
   try {
     const saved = localStorage.getItem(STORAGE_KEY_CACHED_HITS);
     if (saved) {
       const num = parseInt(saved, 10);
-      if (!isNaN(num) && num > 0) cachedTotal = num;
+      if (!isNaN(num) && num > 0) cachedTotal = Math.max(cachedTotal, num);
     }
   } catch {
     // LocalStorage unavailable
@@ -38,29 +40,65 @@ export function getCachedHitStats(): AnonymousHitStats {
 }
 
 /**
- * Detects search crawlers, headless audit tools, and bots (Googlebot, Bingbot, Lighthouse, etc.)
- * Crawlers should never execute analytics/hit registration XHRs during page indexing.
+ * Detects known search engine indexing bots (Googlebot, Bingbot, etc.)
+ * Only actual web crawlers are skipped to prevent crawler artificial inflation.
  */
-function isSearchBotOrCrawler(): boolean {
+function isSearchBot(): boolean {
   if (typeof navigator === 'undefined') return true;
-  if (navigator.webdriver) return true;
-  const ua = navigator.userAgent || '';
-  return /bot|crawler|spider|crawling|googlebot|bingbot|lighthouse|mediapartners|slurp|duckduckbot|baiduspider|yandexbot|sogou|exabot|headlesschrome/i.test(ua);
+  const ua = (navigator.userAgent || '').toLowerCase();
+  return /googlebot|bingbot|baiduspider|yandexbot|duckduckbot|slurp|facebookexternalhit|twitterbot|linkedinbot/i.test(ua);
 }
 
 /**
- * Counts user ONLY when online.
- * If offline, waits until user gets online to register the count.
+ * Determines if this is a fresh visit session (not a rapid refresh within 30 mins)
+ */
+function isNewVisitSession(): boolean {
+  try {
+    // If sessionStorage already recorded visit in current active browser tab, skip re-incrementing
+    if (sessionStorage.getItem(SESSION_KEY_COUNTED)) {
+      return false;
+    }
+    // Check timestamp: if last recorded visit was within 30 minutes, treat as same session
+    const lastVisitStr = localStorage.getItem(STORAGE_KEY_LAST_VISIT_TIME);
+    if (lastVisitStr) {
+      const lastVisitTime = parseInt(lastVisitStr, 10);
+      if (!isNaN(lastVisitTime) && Date.now() - lastVisitTime < SESSION_DURATION_MS) {
+        sessionStorage.setItem(SESSION_KEY_COUNTED, 'true');
+        return false;
+      }
+    }
+    return true;
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Broadcasts hit count updates across the app UI
+ */
+function broadcastHitUpdate(totalHits: number, isOnline = true) {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent('cc_hits_updated', {
+        detail: { totalHits, isOnline },
+      })
+    );
+  }
+}
+
+/**
+ * Counts user when visiting while online.
+ * Uses 30-minute session windows so returning visitors and PWAs are counted properly.
  */
 export async function recordAnonymousVisit(): Promise<AnonymousHitStats> {
-  // Do not execute network XHRs when Googlebot or search crawlers inspect page resources
-  if (isSearchBotOrCrawler()) {
+  // Do not execute network requests when search engine bots inspect page
+  if (isSearchBot()) {
     return getCachedHitStats();
   }
 
   const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : false;
 
-  // If user is currently offline, attach one-time online listener
+  // If user is currently offline, attach one-time online listener to register once reconnected
   if (!isOnline) {
     if (typeof window !== 'undefined' && !onlineListenerAttached) {
       onlineListenerAttached = true;
@@ -75,35 +113,34 @@ export async function recordAnonymousVisit(): Promise<AnonymousHitStats> {
     return getCachedHitStats();
   }
 
-  // Check if session was already counted to avoid multiple increments on fast re-renders
-  let alreadySessionCounted = false;
-  try {
-    alreadySessionCounted = Boolean(sessionStorage.getItem(SESSION_KEY_COUNTED));
-  } catch {
-    // Ignore
-  }
-
+  const shouldIncrement = isNewVisitSession();
   let totalHits = getCachedHitStats().totalHits;
 
   try {
-    const method = alreadySessionCounted ? 'GET' : 'POST';
+    const method = shouldIncrement ? 'POST' : 'GET';
+    const body = shouldIncrement ? JSON.stringify({ clientKnownCount: totalHits }) : undefined;
+
     const res = await fetch('/api/hits', {
       method,
       headers: {
-        Accept: 'application/json',
+        'Accept': 'application/json',
+        ...(body ? { 'Content-Type': 'application/json' } : {}),
       },
+      body,
     });
 
     if (res.ok) {
       const data = await res.json();
       if (typeof data.totalHits === 'number') {
-        totalHits = data.totalHits;
+        totalHits = Math.max(totalHits, data.totalHits);
         try {
           sessionStorage.setItem(SESSION_KEY_COUNTED, 'true');
           localStorage.setItem(STORAGE_KEY_CACHED_HITS, String(totalHits));
+          localStorage.setItem(STORAGE_KEY_LAST_VISIT_TIME, String(Date.now()));
         } catch {
           // Ignore
         }
+        broadcastHitUpdate(totalHits, true);
       }
     }
   } catch {
@@ -118,12 +155,10 @@ export async function recordAnonymousVisit(): Promise<AnonymousHitStats> {
 
 /**
  * Fetches the latest global user count from the server without incrementing.
+ * Always works when online (e.g. for Settings view or Refresh button).
  */
 export async function fetchLatestHitCount(): Promise<AnonymousHitStats> {
   let totalHits = getCachedHitStats().totalHits;
-  if (isSearchBotOrCrawler()) {
-    return { totalHits, isOnline: true };
-  }
   const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : false;
 
   if (isOnline) {
@@ -136,16 +171,17 @@ export async function fetchLatestHitCount(): Promise<AnonymousHitStats> {
       if (res.ok) {
         const data = await res.json();
         if (typeof data.totalHits === 'number') {
-          totalHits = data.totalHits;
+          totalHits = Math.max(totalHits, data.totalHits);
           try {
             localStorage.setItem(STORAGE_KEY_CACHED_HITS, String(totalHits));
           } catch {
             // Ignore
           }
+          broadcastHitUpdate(totalHits, true);
         }
       }
     } catch {
-      // Fails silently if offline
+      // Fails silently if network unavailable
     }
   }
 

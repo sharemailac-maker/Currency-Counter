@@ -846,3 +846,5 @@ export const EarthGlobeLanding: React.FC<EarthGlobeLandingProps> = ({
     </div>
   );
 };
+
+export default EarthGlobeLanding;

@@ -10,19 +10,43 @@ import { GiftFooter } from './components/GiftFooter';
 import { FeedbackPromptBanner } from './components/FeedbackPromptBanner';
 import type { SaveTallyFormData } from './components/SaveTallyDialog';
 
-// Dynamic lazy imports for instant initial paint and lightning-speed app startup
-const EarthGlobeLanding = React.lazy(() => import('./components/EarthGlobeLanding').then(m => ({ default: m.EarthGlobeLanding })));
-const HistoryView = React.lazy(() => import('./components/HistoryView').then(m => ({ default: m.HistoryView })));
-const ConversionView = React.lazy(() => import('./components/ConversionView').then(m => ({ default: m.ConversionView })));
-const SettingsView = React.lazy(() => import('./components/SettingsView').then(m => ({ default: m.SettingsView })));
-const CountrySelectorModal = React.lazy(() => import('./components/CountrySelectorModal').then(m => ({ default: m.CountrySelectorModal })));
-const BreakdownModal = React.lazy(() => import('./components/BreakdownModal').then(m => ({ default: m.BreakdownModal })));
-const SavedTalliesModal = React.lazy(() => import('./components/SavedTalliesModal').then(m => ({ default: m.SavedTalliesModal })));
-const AddCustomDenominationModal = React.lazy(() => import('./components/AddCustomDenominationModal').then(m => ({ default: m.AddCustomDenominationModal })));
-const SaveTallyDialog = React.lazy(() => import('./components/SaveTallyDialog').then(m => ({ default: m.SaveTallyDialog })));
-const ResetConfirmModal = React.lazy(() => import('./components/ResetConfirmModal').then(m => ({ default: m.ResetConfirmModal })));
-const DeleteConfirmModal = React.lazy(() => import('./components/DeleteConfirmModal').then(m => ({ default: m.DeleteConfirmModal })));
-const FeedbackModal = React.lazy(() => import('./components/FeedbackModal').then(m => ({ default: m.FeedbackModal })));
+import { EarthGlobeLanding } from './components/EarthGlobeLanding';
+
+function lazyWithRetry<T extends React.ComponentType<any>>(
+  factory: () => Promise<{ default: T } | Record<string, T>>
+): React.LazyExoticComponent<any> {
+  return React.lazy(async () => {
+    try {
+      const module = await factory();
+      if ('default' in module && module.default) {
+        return { default: module.default };
+      }
+      const firstExport = Object.values(module)[0];
+      return { default: firstExport };
+    } catch (err) {
+      console.warn('Retrying dynamic import failure:', err);
+      await new Promise(r => setTimeout(r, 200));
+      const module = await factory();
+      if ('default' in module && module.default) {
+        return { default: module.default };
+      }
+      const firstExport = Object.values(module)[0];
+      return { default: firstExport };
+    }
+  });
+}
+
+const HistoryView = lazyWithRetry(() => import('./components/HistoryView'));
+const ConversionView = lazyWithRetry(() => import('./components/ConversionView'));
+const SettingsView = lazyWithRetry(() => import('./components/SettingsView'));
+const CountrySelectorModal = lazyWithRetry(() => import('./components/CountrySelectorModal'));
+const BreakdownModal = lazyWithRetry(() => import('./components/BreakdownModal'));
+const SavedTalliesModal = lazyWithRetry(() => import('./components/SavedTalliesModal'));
+const AddCustomDenominationModal = lazyWithRetry(() => import('./components/AddCustomDenominationModal'));
+const SaveTallyDialog = lazyWithRetry(() => import('./components/SaveTallyDialog'));
+const ResetConfirmModal = lazyWithRetry(() => import('./components/ResetConfirmModal'));
+const DeleteConfirmModal = lazyWithRetry(() => import('./components/DeleteConfirmModal'));
+const FeedbackModal = lazyWithRetry(() => import('./components/FeedbackModal'));
 
 function GlobeLoadingSkeleton() {
   return (
