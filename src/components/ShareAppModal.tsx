@@ -131,14 +131,9 @@ export const ShareAppModal: React.FC<ShareAppModalProps> = ({ isOpen, onClose })
             <div className="p-2 rounded-xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300">
               <Share2 className="w-5 h-5" />
             </div>
-            <div>
-              <h3 className="text-base font-bold text-stone-900 dark:text-white">
-                Share This App
-              </h3>
-              <p className="text-xs text-stone-500 dark:text-stone-400">
-                Share with colleagues, tellers, shopkeepers, or friends
-              </p>
-            </div>
+            <h3 className="text-base font-bold text-stone-900 dark:text-white">
+              Share This App
+            </h3>
           </div>
 
           <button
@@ -153,69 +148,56 @@ export const ShareAppModal: React.FC<ShareAppModalProps> = ({ isOpen, onClose })
         {/* Modal Content */}
         <div className="p-5 space-y-4">
           {/* Quick Copy Link Bar */}
-          <div>
-            <label className="block text-[11px] font-bold text-stone-600 dark:text-stone-400 mb-1.5">
-              Copy Web App Link
-            </label>
-            <div className="flex items-center gap-2">
-              <button
-                id="btn-modal-copy-link"
-                onClick={handleCopyLink}
-                className="w-full py-2.5 px-4 rounded-xl bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-750 border border-stone-300 dark:border-stone-700 text-xs font-bold text-stone-800 dark:text-stone-100 flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer shadow-xs"
-              >
-                {copied ? (
-                  <>
-                    <Check className="w-4 h-4 text-emerald-600" />
-                    <span className="text-emerald-600 dark:text-emerald-400">Link Copied to Clipboard!</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-4 h-4 text-stone-500" />
-                    <span>Copy App Link</span>
-                  </>
-                )}
-              </button>
-
-              {typeof navigator !== 'undefined' && 'share' in navigator && (
-                <button
-                  id="btn-modal-system-share"
-                  onClick={handleNativeShare}
-                  className="py-2.5 px-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 transition active:scale-98 cursor-pointer shrink-0 shadow-xs"
-                  title="More device share options"
-                >
-                  <Share2 className="w-4 h-4" />
-                  <span className="hidden sm:inline">More...</span>
-                </button>
+          <div className="flex items-center gap-2">
+            <button
+              id="btn-modal-copy-link"
+              onClick={handleCopyLink}
+              className="w-full py-2.5 px-4 rounded-xl bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-750 border border-stone-300 dark:border-stone-700 text-xs font-bold text-stone-800 dark:text-stone-100 flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer shadow-xs"
+            >
+              {copied ? (
+                <>
+                  <Check className="w-4 h-4 text-emerald-600" />
+                  <span className="text-emerald-600 dark:text-emerald-400">Link Copied to Clipboard!</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-4 h-4 text-stone-500" />
+                  <span>Copy App Link</span>
+                </>
               )}
-            </div>
+            </button>
+
+            {typeof navigator !== 'undefined' && 'share' in navigator && (
+              <button
+                id="btn-modal-system-share"
+                onClick={handleNativeShare}
+                className="py-2.5 px-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 transition active:scale-98 cursor-pointer shrink-0 shadow-xs"
+                title="More device share options"
+              >
+                <Share2 className="w-4 h-4" />
+                <span className="hidden sm:inline">More...</span>
+              </button>
+            )}
           </div>
 
           {/* Social Media Channels Grid */}
-          <div>
-            <label className="block text-[11px] font-bold text-stone-600 dark:text-stone-400 mb-2">
-              Share via Social Media & Messaging
-            </label>
-            <div className="grid grid-cols-2 gap-2.5">
-              {shareOptions.map((opt) => (
-                <button
-                  key={opt.name}
-                  onClick={opt.action}
-                  className={`p-3 rounded-xl border flex items-center gap-2.5 transition active:scale-95 cursor-pointer shadow-2xs hover:shadow-xs ${opt.bgColor}`}
-                >
-                  <div className={`p-2 rounded-lg ${opt.color} shrink-0`}>
-                    {opt.icon}
-                  </div>
-                  <div className="text-left min-w-0">
-                    <span className={`block text-xs font-bold truncate ${opt.textColor}`}>
-                      {opt.name}
-                    </span>
-                    <span className="text-[10px] text-stone-500 dark:text-stone-400 flex items-center gap-0.5">
-                      Share <ExternalLink className="w-2.5 h-2.5 inline" />
-                    </span>
-                  </div>
-                </button>
-              ))}
-            </div>
+          <div className="grid grid-cols-2 gap-2.5">
+            {shareOptions.map((opt) => (
+              <button
+                key={opt.name}
+                onClick={opt.action}
+                className={`p-3 rounded-xl border flex items-center gap-2.5 transition active:scale-95 cursor-pointer shadow-2xs hover:shadow-xs ${opt.bgColor}`}
+              >
+                <div className={`p-2 rounded-lg ${opt.color} shrink-0`}>
+                  {opt.icon}
+                </div>
+                <div className="text-left min-w-0">
+                  <span className={`block text-xs font-bold truncate ${opt.textColor}`}>
+                    {opt.name}
+                  </span>
+                </div>
+              </button>
+            ))}
           </div>
         </div>
 

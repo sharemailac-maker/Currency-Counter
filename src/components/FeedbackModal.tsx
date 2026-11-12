@@ -170,14 +170,9 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
             <div className="p-2 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300">
               <MessageSquare className="w-5 h-5" />
             </div>
-            <div>
-              <h3 className="text-base font-bold text-stone-900 dark:text-white">
-                Feedback & Suggestions
-              </h3>
-              <p className="text-xs text-stone-500 dark:text-stone-400">
-                Share your ideas, changes requested, or notes
-              </p>
-            </div>
+            <h3 className="text-base font-bold text-stone-900 dark:text-white">
+              Feedback & Suggestions
+            </h3>
           </div>
 
           <button
@@ -283,9 +278,6 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
                   placeholder="yourname@gmail.com"
                   className="w-full px-3 py-2 rounded-xl bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-xs text-stone-900 dark:text-white placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
-                <p className="text-[10px] text-stone-400 dark:text-stone-500 mt-1">
-                  A valid email address is required so the team can reply to your inquiry.
-                </p>
               </div>
 
               {/* Message */}

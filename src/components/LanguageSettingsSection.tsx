@@ -98,10 +98,6 @@ export const LanguageSettingsSection: React.FC = () => {
               {isCustomPackActive && <span className="text-[9px] text-amber-600 dark:text-amber-400">(Custom)</span>}
             </span>
           </div>
-          <div className="text-xs text-stone-500 dark:text-stone-400 mt-1 space-y-0.5 leading-tight">
-            <p>Select national (Hindi & regional Indian languages) or global languages for instant offline use.</p>
-            <p>Download offline language packs and app user guide for staff training without scrolling.</p>
-          </div>
         </div>
 
         {/* "v" Drop-down toggle button matching Company/firm setup */}
@@ -173,7 +169,7 @@ export const LanguageSettingsSection: React.FC = () => {
           {/* Quick Offline Actions Grid - Compact & Highly Functional */}
           <div>
             <div className="text-[11px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2">
-              Offline Language Packs & Guide (Download for Offline Usage)
+              Language Packs & Guide
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -183,7 +179,7 @@ export const LanguageSettingsSection: React.FC = () => {
                 id="btn-download-active-pack"
                 onClick={() => {
                   downloadLanguagePack(language);
-                  showNotification(`Downloaded ${langMeta.name} Language Pack JSON for offline use`);
+                  showNotification(`Downloaded ${langMeta.name} Language Pack JSON`);
                 }}
                 className="p-2.5 rounded-xl bg-stone-50 dark:bg-stone-800/80 hover:bg-stone-100 dark:hover:bg-stone-700/80 border border-stone-200 dark:border-stone-700 text-left transition flex items-center justify-between gap-2 group cursor-pointer"
               >
@@ -191,13 +187,8 @@ export const LanguageSettingsSection: React.FC = () => {
                   <div className="p-1.5 rounded-lg bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-400 shrink-0">
                     <Download className="w-4 h-4" />
                   </div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-bold text-stone-800 dark:text-stone-200 truncate">
-                      {langMeta.nativeName} Pack (.json)
-                    </div>
-                    <div className="text-[10px] text-stone-500 dark:text-stone-400 truncate">
-                      Full translation for offline backup
-                    </div>
+                  <div className="text-xs font-bold text-stone-800 dark:text-stone-200 truncate">
+                    {langMeta.nativeName} Pack (.json)
                   </div>
                 </div>
                 <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 group-hover:translate-x-0.5 transition-transform shrink-0">
@@ -219,13 +210,8 @@ export const LanguageSettingsSection: React.FC = () => {
                   <div className="p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 shrink-0">
                     <BookOpen className="w-4 h-4" />
                   </div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-bold text-stone-800 dark:text-stone-200 truncate">
-                      App Function Guide (.txt)
-                    </div>
-                    <div className="text-[10px] text-stone-500 dark:text-stone-400 truncate">
-                      Staff training & functions guide
-                    </div>
+                  <div className="text-xs font-bold text-stone-800 dark:text-stone-200 truncate">
+                    App Guide (.txt)
                   </div>
                 </div>
                 <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 group-hover:translate-x-0.5 transition-transform shrink-0">
@@ -247,13 +233,8 @@ export const LanguageSettingsSection: React.FC = () => {
                   <div className="p-1.5 rounded-lg bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-400 shrink-0">
                     <Package className="w-4 h-4" />
                   </div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-bold text-stone-800 dark:text-stone-200 truncate">
-                      All 12 Packs Bundle (.json)
-                    </div>
-                    <div className="text-[10px] text-stone-500 dark:text-stone-400 truncate">
-                      Hindi, Gujarati, Marathi, Tamil, etc.
-                    </div>
+                  <div className="text-xs font-bold text-stone-800 dark:text-stone-200 truncate">
+                    All Packs Bundle (.json)
                   </div>
                 </div>
                 <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400 group-hover:translate-x-0.5 transition-transform shrink-0">
@@ -272,13 +253,8 @@ export const LanguageSettingsSection: React.FC = () => {
                   <div className="p-1.5 rounded-lg bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 shrink-0">
                     <Upload className="w-4 h-4" />
                   </div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-bold text-stone-800 dark:text-stone-200 truncate">
-                      Import Custom Pack
-                    </div>
-                    <div className="text-[10px] text-stone-500 dark:text-stone-400 truncate">
-                      Upload modified JSON dictionary
-                    </div>
+                  <div className="text-xs font-bold text-stone-800 dark:text-stone-200 truncate">
+                    Import Custom Pack
                   </div>
                 </div>
                 <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 group-hover:translate-x-0.5 transition-transform shrink-0">

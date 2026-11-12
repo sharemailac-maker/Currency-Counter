@@ -295,8 +295,7 @@ async function startServer() {
     res.json({ totalHits, anonymous: true });
   });
 
-  const hitLimiter = createRateLimiter(120, 60 * 1000);
-  app.post('/api/hits', hitLimiter, (req: Request, res: Response) => {
+  app.post('/api/hits', (req: Request, res: Response) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Cache-Control', 'no-store, max-age=0');
     const clientKnown = typeof req.body?.clientKnownCount === 'number' ? req.body.clientKnownCount : undefined;

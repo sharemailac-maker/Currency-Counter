@@ -24,7 +24,8 @@ import {
   CalendarClock,
   ArrowLeftRight,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  ChevronRight
 } from 'lucide-react';
 import { playChimeSound } from '../utils/audio';
 import { FeedbackModal } from './FeedbackModal';
@@ -279,9 +280,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 <span>{t.settings.offlineBadge || '100% Offline'}</span>
               </span>
             </div>
-            <p className="text-xs text-stone-500 dark:text-stone-400 mt-1 leading-relaxed">
-              {t.settings.offlineDescription}
-            </p>
           </div>
         </div>
 
@@ -304,70 +302,84 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         {/* Multi-Language Support & Language Packs (User Requested) */}
         <LanguageSettingsSection />
 
-        {/* Audio / Tactile Feedback Settings */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-xs">
-          <h2 className="text-sm font-bold text-stone-900 dark:text-white mb-3 flex items-center gap-2">
-            <Volume2 className="w-4 h-4 text-emerald-600" />
-            <span>{t.settings.audioHeader}</span>
-          </h2>
-
-          <div className="flex items-center justify-between py-2 border-t border-stone-100 dark:border-stone-800">
-            <div>
-              <p className="text-xs font-semibold text-stone-800 dark:text-stone-200">
-                {t.settings.audioLabel}
-              </p>
-              <p className="text-[11px] text-stone-500 dark:text-stone-400">
-                {t.settings.audioDescription}
-              </p>
-            </div>
-
-            <button
-              id="btn-toggle-sound-settings"
-              onClick={() => {
-                const next = !soundEnabled;
-                onToggleSound(next);
-                if (next) playChimeSound(true);
-              }}
-              className={`p-2 rounded-xl border transition flex items-center gap-1.5 text-xs font-semibold ${
+        {/* Sound & Audio Feedback Actionable Card */}
+        <button
+          id="btn-toggle-sound-settings"
+          type="button"
+          onClick={() => {
+            const next = !soundEnabled;
+            onToggleSound(next);
+            if (next) playChimeSound(true);
+          }}
+          className={`w-full p-4 sm:p-5 rounded-2xl bg-white dark:bg-stone-900 border shadow-xs hover:shadow-sm flex items-center justify-between gap-3 transition active:scale-[0.99] cursor-pointer text-left group ${
+            soundEnabled
+              ? 'border-emerald-300 dark:border-emerald-800/80 hover:border-emerald-400 dark:hover:border-emerald-700'
+              : 'border-stone-200 dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700'
+          }`}
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <div
+              className={`p-2.5 rounded-xl shrink-0 transition-colors ${
                 soundEnabled
-                  ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
-                  : 'bg-stone-100 dark:bg-stone-800 text-stone-500 border-stone-200 dark:border-stone-700'
+                  ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300'
+                  : 'bg-stone-100 dark:bg-stone-800 text-stone-400 dark:text-stone-500'
               }`}
             >
-              {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-              <span>{soundEnabled ? t.settings.enabled : t.settings.muted}</span>
-            </button>
+              {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+            </div>
+            <div className="flex items-center gap-2 flex-wrap min-w-0">
+              <span className="text-sm font-bold text-stone-900 dark:text-white truncate">
+                {t.settings.audioLabel || 'Sound Feedback'}
+              </span>
+              <span
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-full transition-colors ${
+                  soundEnabled
+                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                    : 'bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-400'
+                }`}
+              >
+                {soundEnabled ? (t.settings.enabled || 'Enabled') : (t.settings.muted || 'Muted')}
+              </span>
+            </div>
           </div>
-        </div>
 
-        {/* Other Calculators for Conversion Section (Permanently ON with V Drop-down to Change) */}
+          {/* Toggle Switch Indicator */}
+          <div
+            className={`w-11 h-6 rounded-full transition-colors p-0.5 flex items-center shrink-0 ${
+              soundEnabled ? 'bg-emerald-600' : 'bg-stone-300 dark:bg-stone-700'
+            }`}
+          >
+            <div
+              className={`w-5 h-5 rounded-full bg-white shadow-xs transition-transform transform ${
+                soundEnabled ? 'translate-x-5' : 'translate-x-0'
+              }`}
+            />
+          </div>
+        </button>
+
+        {/* Other Calculators for Conversion Section */}
         <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-xs space-y-3">
           <div className="flex items-center justify-between gap-3">
-            <div className="flex items-start gap-3 flex-1 min-w-0">
-              <div className="p-2.5 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 shrink-0 mt-0.5">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <div className="p-2.5 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 shrink-0">
                 <Calculator className="w-5 h-5" />
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h2 className="text-base font-bold text-stone-900 dark:text-white">
-                    Other Calculators
-                  </h2>
-                  <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 flex items-center gap-1">
-                    {selectedCalcType === 'fd' && <PiggyBank className="w-3.5 h-3.5" />}
-                    {selectedCalcType === 'sip' && <TrendingUp className="w-3.5 h-3.5" />}
-                    {selectedCalcType === 'rd' && <CalendarClock className="w-3.5 h-3.5" />}
-                    {selectedCalcType === 'loan_emi' && <Calculator className="w-3.5 h-3.5" />}
-                    <span>
-                      {selectedCalcType === 'fd' && 'Fixed Deposit (FD)'}
-                      {selectedCalcType === 'sip' && 'SIP Calculator'}
-                      {selectedCalcType === 'rd' && 'Recurring Deposit (RD)'}
-                      {selectedCalcType === 'loan_emi' && 'Loan EMI Calculator'}
-                    </span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-base font-bold text-stone-900 dark:text-white">
+                  Other Calculators
+                </h2>
+                <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 flex items-center gap-1">
+                  {selectedCalcType === 'fd' && <PiggyBank className="w-3.5 h-3.5" />}
+                  {selectedCalcType === 'sip' && <TrendingUp className="w-3.5 h-3.5" />}
+                  {selectedCalcType === 'rd' && <CalendarClock className="w-3.5 h-3.5" />}
+                  {selectedCalcType === 'loan_emi' && <Calculator className="w-3.5 h-3.5" />}
+                  <span>
+                    {selectedCalcType === 'fd' && 'Fixed Deposit (FD)'}
+                    {selectedCalcType === 'sip' && 'SIP Calculator'}
+                    {selectedCalcType === 'rd' && 'Recurring Deposit (RD)'}
+                    {selectedCalcType === 'loan_emi' && 'Loan EMI Calculator'}
                   </span>
-                </div>
-                <p className="text-xs text-stone-500 dark:text-stone-400 mt-1 leading-tight">
-                  Supplementary calculators for Conversion section (Currency converter is always active).
-                </p>
+                </span>
               </div>
             </div>
 
@@ -394,35 +406,26 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           {/* Collapsible Drop-down Content */}
           {isOtherCalcsDropdownOpen && (
             <div className="pt-3 border-t border-stone-100 dark:border-stone-800 space-y-2.5 animate-in fade-in duration-150">
-              <div className="flex items-center justify-between text-xs text-stone-500 dark:text-stone-400 px-0.5">
-                <span>Select active calculator for Conversion section:</span>
-                <span className="font-semibold text-emerald-600 dark:text-emerald-400">1 active</span>
-              </div>
-
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 {[
                   {
                     id: 'fd' as const,
-                    title: 'Fixed Deposit (FD) Calculator',
-                    desc: 'Simple or compounding interest (monthly, quarterly, half-yearly, yearly)',
+                    title: 'Fixed Deposit (FD)',
                     icon: PiggyBank,
                   },
                   {
                     id: 'sip' as const,
-                    title: 'SIP (Systematic Investment) Plan',
-                    desc: 'Monthly SIP wealth compounding, expected return & wealth growth',
+                    title: 'SIP Calculator',
                     icon: TrendingUp,
                   },
                   {
                     id: 'rd' as const,
-                    title: 'Recurring Deposit (RD) Calculator',
-                    desc: 'Monthly RD deposit with simple or quarterly/annual compounding',
+                    title: 'Recurring Deposit (RD)',
                     icon: CalendarClock,
                   },
                   {
                     id: 'loan_emi' as const,
                     title: 'Loan EMI Calculator',
-                    desc: 'Reducing balance EMI or flat simple interest with copy & 1-page print',
                     icon: Calculator,
                   },
                 ].map((calc) => {
@@ -433,14 +436,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                       key={calc.id}
                       type="button"
                       onClick={() => handleSelectCalculatorType(calc.id)}
-                      className={`p-3 rounded-2xl border text-left transition flex items-start gap-3 cursor-pointer ${
+                      className={`p-3 rounded-2xl border text-left transition flex items-center gap-3 cursor-pointer ${
                         isSelected
                           ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 dark:border-emerald-600 ring-2 ring-emerald-500/30'
                           : 'bg-stone-50/80 dark:bg-stone-800/50 border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-800'
                       }`}
                     >
                       <div
-                        className={`p-2 rounded-xl shrink-0 mt-0.5 ${
+                        className={`p-2 rounded-xl shrink-0 ${
                           isSelected
                             ? 'bg-emerald-600 text-white shadow-xs'
                             : 'bg-stone-200/80 dark:bg-stone-700 text-stone-600 dark:text-stone-300'
@@ -448,22 +451,17 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                       >
                         <Icon className="w-4 h-4" />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-1">
-                          <span className={`text-xs font-bold truncate ${
-                            isSelected ? 'text-emerald-950 dark:text-emerald-200' : 'text-stone-900 dark:text-white'
-                          }`}>
-                            {calc.title}
+                      <div className="flex-1 min-w-0 flex items-center justify-between gap-1">
+                        <span className={`text-xs font-bold truncate ${
+                          isSelected ? 'text-emerald-950 dark:text-emerald-200' : 'text-stone-900 dark:text-white'
+                        }`}>
+                          {calc.title}
+                        </span>
+                        {isSelected && (
+                          <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/60 px-1.5 py-0.5 rounded-full flex items-center gap-1 shrink-0">
+                            <Check className="w-3 h-3" /> Active
                           </span>
-                          {isSelected && (
-                            <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/60 px-1.5 py-0.5 rounded-full flex items-center gap-1 shrink-0">
-                              <Check className="w-3 h-3" /> Active
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-0.5 line-clamp-1">
-                          {calc.desc}
-                        </p>
+                        )}
                       </div>
                     </button>
                   );
@@ -473,27 +471,22 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           )}
         </div>
 
-        {/* Add/Manage Custom Currency (User Requested) */}
+        {/* Add/Manage Custom Currency */}
         <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-xs space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-xl bg-teal-100 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 shrink-0">
                 <Coins className="w-5 h-5" />
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-sm font-bold text-stone-900 dark:text-white">
-                    {t.settings.customCurrencyHeader || 'Add/Manage Custom Currency'}
-                  </h2>
-                  {customDenomsList.length > 0 && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-100 dark:bg-teal-950/60 text-teal-800 dark:text-teal-300">
-                      {customDenomsList.length} Custom
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
-                  {t.settings.customCurrencyDesc}
-                </p>
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-bold text-stone-900 dark:text-white">
+                  {t.settings.customCurrencyHeader || 'Custom Currency'}
+                </h2>
+                {customDenomsList.length > 0 && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-100 dark:bg-teal-950/60 text-teal-800 dark:text-teal-300">
+                    {customDenomsList.length} Custom
+                  </span>
+                )}
               </div>
             </div>
 
@@ -504,7 +497,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 className="px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition active:scale-95 cursor-pointer shrink-0"
               >
                 <PlusCircle className="w-4 h-4" />
-                <span>{t.settings.addCustomBtn || 'Add/Manage Custom Currency'}</span>
+                <span>{t.settings.addCustomBtn || 'Add Custom'}</span>
               </button>
             )}
           </div>
@@ -553,108 +546,93 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           )}
         </div>
 
-        {/* Share This App (Link is hidden, only button visible which opens modal with all options) */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300">
+        {/* Left-Aligned Actionable Cards: Share App, Feedback & Suggestions, Update App (Version) */}
+        {/* Share App Actionable Card */}
+        <button
+          id="btn-share-app"
+          type="button"
+          onClick={() => setIsShareModalOpen(true)}
+          className="w-full p-4 sm:p-5 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 hover:border-indigo-300 dark:hover:border-indigo-700 shadow-xs hover:shadow-sm flex items-center justify-between gap-3 transition active:scale-[0.99] cursor-pointer text-left group"
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="p-2.5 rounded-xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 shrink-0">
               <Share2 className="w-5 h-5" />
             </div>
-            <div>
-              <h2 className="text-sm font-bold text-stone-900 dark:text-white">
-                {t.settings.shareAppHeader}
-              </h2>
-              <p className="text-xs text-stone-500 dark:text-stone-400">
-                {t.settings.shareAppDesc}
-              </p>
-            </div>
+            <span className="text-sm font-bold text-stone-900 dark:text-white truncate">
+              Share App
+            </span>
           </div>
+          <ChevronRight className="w-5 h-5 text-stone-400 dark:text-stone-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 group-hover:translate-x-0.5 transition shrink-0" />
+        </button>
 
-          <button
-            id="btn-share-app"
-            onClick={() => setIsShareModalOpen(true)}
-            className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition active:scale-95 cursor-pointer shrink-0"
-          >
-            <Share2 className="w-4 h-4" />
-            <span>{t.settings.shareAppBtn}</span>
-          </button>
-        </div>
-
-        {/* Feedback & Suggestions (Pop-up Window Trigger) */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300">
+        {/* Feedback & Suggestions Actionable Card */}
+        <button
+          id="btn-open-feedback-popup"
+          type="button"
+          onClick={() => setIsFeedbackModalOpen(true)}
+          className="w-full p-4 sm:p-5 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 hover:border-amber-300 dark:hover:border-amber-700 shadow-xs hover:shadow-sm flex items-center justify-between gap-3 transition active:scale-[0.99] cursor-pointer text-left group"
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="p-2.5 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 shrink-0">
               <MessageSquare className="w-5 h-5" />
             </div>
-            <div>
-              <h2 className="text-sm font-bold text-stone-900 dark:text-white">
-                {t.settings.feedbackHeader}
-              </h2>
-              <p className="text-xs text-stone-500 dark:text-stone-400">
-                {t.settings.feedbackDesc}
-              </p>
-            </div>
-          </div>
-
-          <button
-            id="btn-open-feedback-popup"
-            onClick={() => setIsFeedbackModalOpen(true)}
-            className="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition active:scale-95 cursor-pointer shrink-0"
-          >
-            <MessageSquare className="w-4 h-4" />
-            <span>{t.settings.feedbackBtn}</span>
-          </button>
-        </div>
-
-        {/* Update App & Version Status */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 shrink-0">
-              <RefreshCw className="w-5 h-5 text-emerald-600" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm font-bold text-stone-900 dark:text-white">
-                  {t.settings.updateAppHeader || 'Update App'}
-                </h2>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-mono">
-                  v{APP_VERSION}
-                </span>
-              </div>
-              <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
-                {appUpdateMessage || (t.settings.updateAppDesc || 'Check for new features, currency additions, and offline cache updates')}
-              </p>
-            </div>
-          </div>
-
-          <button
-            id="btn-update-app-settings"
-            onClick={handleUpdateApp}
-            disabled={isCheckingAppUpdate}
-            className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition active:scale-95 cursor-pointer shrink-0 disabled:opacity-60"
-          >
-            <RefreshCw className={`w-4 h-4 ${isCheckingAppUpdate ? 'animate-spin' : ''}`} />
-            <span>
-              {isCheckingAppUpdate
-                ? (t.settings.updateAppChecking || 'Checking...')
-                : (t.settings.updateAppBtn || 'Update App')}
+            <span className="text-sm font-bold text-stone-900 dark:text-white truncate">
+              Feedback & Suggestions
             </span>
-          </button>
-        </div>
+          </div>
+          <ChevronRight className="w-5 h-5 text-stone-400 dark:text-stone-500 group-hover:text-amber-600 dark:group-hover:text-amber-400 group-hover:translate-x-0.5 transition shrink-0" />
+        </button>
+
+        {/* Update App (Version) Actionable Card */}
+        <button
+          id="btn-update-app-settings"
+          type="button"
+          onClick={handleUpdateApp}
+          disabled={isCheckingAppUpdate}
+          className="w-full p-4 sm:p-5 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 hover:border-emerald-300 dark:hover:border-emerald-700 shadow-xs hover:shadow-sm flex items-center justify-between gap-3 transition active:scale-[0.99] cursor-pointer text-left group disabled:opacity-60"
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="p-2.5 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 shrink-0">
+              <RefreshCw className={`w-5 h-5 ${isCheckingAppUpdate ? 'animate-spin' : ''}`} />
+            </div>
+            <div className="flex items-center gap-2 flex-wrap min-w-0">
+              <span className="text-sm font-bold text-stone-900 dark:text-white">
+                Update App
+              </span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-mono">
+                v{APP_VERSION}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {isCheckingAppUpdate && (
+              <span className="text-xs text-stone-500 dark:text-stone-400">
+                Checking...
+              </span>
+            )}
+            <ChevronRight className="w-5 h-5 text-stone-400 dark:text-stone-500 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 group-hover:translate-x-0.5 transition shrink-0" />
+          </div>
+        </button>
+
+        {/* Update App Status Feedback Toast */}
+        {appUpdateMessage && (
+          <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-semibold flex items-center justify-center gap-2 animate-in fade-in duration-150">
+            <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <span>{appUpdateMessage}</span>
+          </div>
+        )}
 
         {/* Data Management & Offline Backup (with V Drop-down) */}
         <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-xs space-y-3">
           <div className="flex items-center justify-between gap-3">
-            <div className="flex items-start gap-3 flex-1 min-w-0">
-              <div className="p-2.5 rounded-xl bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 shrink-0 mt-0.5">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <div className="p-2.5 rounded-xl bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 shrink-0">
                 <Download className="w-5 h-5" />
               </div>
               <div className="flex-1 min-w-0">
                 <h2 className="text-base font-bold text-stone-900 dark:text-white">
                   {t.settings.dataManagementHeader}
                 </h2>
-                <p className="text-xs text-stone-500 dark:text-stone-400 mt-1 leading-tight">
-                  {t.settings.dataManagementDesc}
-                </p>
               </div>
             </div>
 
