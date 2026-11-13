@@ -485,8 +485,8 @@ async function startServer() {
       res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
       if (filePath.includes(`${path.sep}assets${path.sep}`)) {
         res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-      } else if (filePath.endsWith('.html')) {
-        res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+      } else if (filePath.endsWith('.html') || filePath.endsWith(`${path.sep}sw.js`)) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       }
     },
   };
@@ -504,6 +504,11 @@ async function startServer() {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath, staticOptions));
     app.get('*', (req: Request, res: Response) => {
+      if (req.path.startsWith('/assets/')) {
+        res.status(404).end();
+        return;
+      }
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }

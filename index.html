@@ -161,39 +161,22 @@
       <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     </noscript>
   </head>
-  <body class="bg-stone-100 text-stone-900 antialiased selection:bg-emerald-500 selection:text-white">
+  <body class="bg-stone-950 text-stone-100 antialiased selection:bg-emerald-500 selection:text-white">
     <div id="root">
-      <!-- Semantic crawlable content for Google Search indexing before client hydration -->
-      <main class="max-w-4xl mx-auto p-6 font-sans">
-        <header class="mb-6">
-          <h1 class="text-3xl font-bold text-emerald-800">Currency Counter – Cash Denomination Counter & Financial Calculators</h1>
-          <p class="text-base text-stone-700 mt-2">
-            An offline cash denomination counter, money calculator, and financial toolkit supporting 47+ global currencies and countries. Quickly tally cash banknotes and coins, calculate total amounts in figures and words, and run investment and loan calculators.
-          </p>
-        </header>
-
-        <section class="mb-6">
-          <h2 class="text-xl font-semibold text-stone-800 mb-2">Financial Calculators Included</h2>
-          <ul class="list-disc list-inside space-y-1 text-stone-700">
-            <li><strong>Fixed Deposit (FD) Calculator:</strong> Calculate maturity value and interest earned with simple and compound interest (monthly, quarterly, half-yearly, and yearly compounding).</li>
-            <li><strong>SIP (Systematic Investment Plan) Wealth Calculator:</strong> Project mutual fund and SIP growth, total wealth gain, and maturity corpus.</li>
-            <li><strong>Recurring Deposit (RD) Calculator:</strong> Compute monthly savings maturity amounts and cumulative returns.</li>
-            <li><strong>Loan EMI Calculator:</strong> Calculate home loan, personal loan, and car loan monthly EMIs with principal and total interest breakdown.</li>
-            <li><strong>Multi-Currency Converter:</strong> Real-time and offline exchange rate conversion between 47+ global currencies.</li>
-          </ul>
-        </section>
-
-        <section class="mb-6">
-          <h2 class="text-xl font-semibold text-stone-800 mb-2">Supported Countries & Global Currencies (47+ Nations)</h2>
-          <p class="text-stone-700 text-sm leading-relaxed">
-            Argentina (Argentine Peso - ARS), Australia (Australian Dollar - AUD), Bahrain (Bahraini Dinar - BHD), Bangladesh (Bangladeshi Taka - BDT), Bharat / India (Indian Rupee - INR), Brazil (Brazilian Real - BRL), Cameroon (Central African CFA Franc - XAF), Canada (Canadian Dollar - CAD), China (Chinese Yuan Renminbi - CNY), Colombia (Colombian Peso - COP), Côte d'Ivoire (West African CFA Franc - XOF), Denmark (Danish Krone - DKK), Egypt (Egyptian Pound - EGP), Eurozone 19+ Countries (Euro - EUR), Gabon (Central African CFA Franc - XAF), Hong Kong (Hong Kong Dollar - HKD), Indonesia (Indonesian Rupiah - IDR), Israel (Israeli New Shekel - ILS), Japan (Japanese Yen - JPY), Kenya (Kenyan Shilling - KES), Kuwait (Kuwaiti Dinar - KWD), Malaysia (Malaysian Ringgit - MYR), Mexico (Mexican Peso - MXN), Nepal (Nepalese Rupee - NPR), New Zealand (New Zealand Dollar - NZD), Nigeria (Nigerian Naira - NGN), Norway (Norwegian Krone - NOK), Oman (Omani Rial - OMR), Pakistan (Pakistani Rupee - PKR), Philippines (Philippine Peso - PHP), Poland (Polish Złoty - PLN), Qatar (Qatari Riyal - QAR), Russia (Russian Ruble - RUB), Saudi Arabia (Saudi Riyal - SAR), Senegal (West African CFA Franc - XOF), Singapore (Singapore Dollar - SGD), South Africa (South African Rand - ZAR), South Korea (South Korean Won - KRW), Sri Lanka (Sri Lankan Rupee - LKR), Sweden (Swedish Krona - SEK), Switzerland (Swiss Franc - CHF), Thailand (Thai Baht - THB), Turkey (Turkish Lira - TRY), United Arab Emirates (UAE Dirham - AED), United Kingdom (British Pound Sterling - GBP), United States (US Dollar - USD), Vietnam (Vietnamese Dong - VND).
-          </p>
-        </section>
-      </main>
+      <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 40%,#064e3b 0%,#0c0a09 65%);color:#f5f5f4;font-family:system-ui,-apple-system,sans-serif;padding:24px;text-align:center;">
+        <div style="width:96px;height:96px;border-radius:9999px;border:3px solid rgba(16,185,129,0.25);border-top-color:#34d399;display:flex;align-items:center;justify-content:center;margin-bottom:18px;box-shadow:0 0 40px rgba(16,185,129,0.25);animation:ccSpin 1s linear infinite;">
+          <span style="font-size:36px;animation:ccSpinRev 1s linear infinite;">🌍</span>
+        </div>
+        <div style="font-size:18px;font-weight:800;letter-spacing:0.02em;color:#34d399;">Currency Counter</div>
+      </div>
+      <style>
+        @keyframes ccSpin { to { transform: rotate(360deg); } }
+        @keyframes ccSpinRev { to { transform: rotate(-360deg); } }
+      </style>
     </div>
     <noscript>
-      <div class="p-6 max-w-2xl mx-auto bg-white rounded-xl shadow-md my-8 text-center">
-        <p class="text-stone-800 font-medium">Please enable JavaScript to enjoy the full interactive experience of Currency Counter.</p>
+      <div class="p-6 max-w-2xl mx-auto bg-white text-stone-900 rounded-xl shadow-md my-8 text-center">
+        <p class="font-medium">Please enable JavaScript to use Currency Counter.</p>
       </div>
     </noscript>
     <script type="module" src="/src/main.tsx"></script>

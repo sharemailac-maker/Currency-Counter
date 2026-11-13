@@ -1,76 +1,111 @@
-const CACHE_NAME = 'currency-counter-v3';
+const CACHE_NAME = 'currency-counter-v4';
 
 const PRECACHE_ASSETS = [
-  '/',
-  '/index.html',
   '/app-icon.png',
   '/apple-touch-icon.png',
   '/icon-192.png',
   '/icon-512.png',
-  '/manifest.webmanifest'
+  '/manifest.webmanifest',
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(PRECACHE_ASSETS);
-    }).then(() => self.skipWaiting())
+    caches
+      .open(CACHE_NAME)
+      .then((cache) => cache.addAll(PRECACHE_ASSETS))
+      .then(() => self.skipWaiting())
   );
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
-      );
-    }).then(() => self.clients.claim())
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(
+          keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+        )
+      )
+      .then(() => self.clients.claim())
   );
 });
 
 self.addEventListener('fetch', (event) => {
-  // Only handle same-origin GET requests and skip API endpoints
+  const { request } = event;
+  if (request.method !== 'GET') return;
+
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
+
+  // Never intercept API endpoints or Vite dev server module URLs
   if (
-    event.request.method !== 'GET' ||
-    !event.request.url.startsWith(self.location.origin) ||
-    event.request.url.includes('/api/')
+    url.pathname.startsWith('/api/') ||
+    url.pathname.startsWith('/@vite/') ||
+    url.pathname.startsWith('/@react-refresh') ||
+    url.pathname.startsWith('/src/') ||
+    url.pathname.startsWith('/node_modules/') ||
+    url.pathname === '/sw.js'
   ) {
     return;
   }
 
-  event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        // Fetch in background to update cache (Stale-While-Revalidate)
-        fetch(event.request).then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            const responseClone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseClone);
-            });
+  // Network-First for HTML/navigation so users never get stuck with stale index.html chunk hashes
+  if (
+    request.mode === 'navigate' ||
+    url.pathname === '/' ||
+    url.pathname === '/index.html'
+  ) {
+    event.respondWith(
+      fetch(request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.ok) {
+            const copy = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
           }
-        }).catch(() => {
-          // Offline, ignore network error
-        });
+          return networkResponse;
+        })
+        .catch(() =>
+          caches.match(request).then((cached) => cached || caches.match('/index.html'))
+        )
+    );
+    return;
+  }
+
+  // Stale-While-Revalidate for built static assets (never cache HTML error fallbacks as JS/CSS)
+  event.respondWith(
+    caches.match(request).then((cachedResponse) => {
+      if (cachedResponse) {
+        fetch(request)
+          .then((networkResponse) => {
+            const contentType = networkResponse.headers.get('content-type') || '';
+            if (
+              networkResponse &&
+              networkResponse.ok &&
+              networkResponse.type === 'basic' &&
+              !(url.pathname.startsWith('/assets/') && contentType.includes('text/html'))
+            ) {
+              const copy = networkResponse.clone();
+              caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+            }
+          })
+          .catch(() => {});
         return cachedResponse;
       }
 
-      return fetch(event.request).then((networkResponse) => {
-        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+      return fetch(request).then((networkResponse) => {
+        const contentType = networkResponse.headers.get('content-type') || '';
+        if (
+          !networkResponse ||
+          !networkResponse.ok ||
+          networkResponse.type !== 'basic' ||
+          (url.pathname.startsWith('/assets/') && contentType.includes('text/html'))
+        ) {
           return networkResponse;
         }
 
-        const responseClone = networkResponse.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseClone);
-        });
-
+        const copy = networkResponse.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
         return networkResponse;
-      }).catch(() => {
-        // If offline and request is for page, return cached index.html
-        if (event.request.mode === 'navigate') {
-          return caches.match('/index.html');
-        }
       });
     })
   );

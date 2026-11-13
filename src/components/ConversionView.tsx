@@ -21,6 +21,7 @@ import { formatCurrencyAmount } from '../utils/formatters';
 import { copyToClipboard } from '../utils/clipboard';
 import { FinancialCalculators } from './FinancialCalculators';
 import { GiftFooter } from './GiftFooter';
+import { getSuggestedBenchmarkRate } from '../data/exchangeRates';
 
 interface ConversionViewProps {
   currentCountry: CountryCurrency;
@@ -63,29 +64,19 @@ export const ConversionView: React.FC<ConversionViewProps> = ({
     return allCountries.find((c) => c.id === toCountryId) || allCountries[0];
   }, [allCountries, toCountryId]);
 
-  // Which currency sits on the 1-unit base side: e.g. 'USD' for '1 USD = 95.82 INR'
-  // Initialized intelligently to the more common denominator or source currency
+  // Which currency sits on the 1-unit base side: e.g. 'USD' for '1 USD = 94.0861 INR'
+  // Initialized to the suggested benchmark orientation for the default pair
   const [baseCurrencyCode, setBaseCurrencyCode] = useState<string>(() => {
-    // If either currency is USD/EUR/GBP, humans typically remember 1 USD = X INR, 1 EUR = X INR
-    const majorCurrencies = ['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'CHF', 'SGD', 'ILS'];
     const toMatch = allCountries.find((c) => c.id === toCountryId) || allCountries[0];
     const fromMatch = allCountries.find((c) => c.id === fromCountryId) || currentCountry;
-    if (majorCurrencies.includes(toMatch.currencyCode) && !majorCurrencies.includes(fromMatch.currencyCode)) {
-      return toMatch.currencyCode;
-    }
-    return fromMatch.currencyCode;
+    return getSuggestedBenchmarkRate(fromMatch.currencyCode, toMatch.currencyCode).baseCode;
   });
 
-  // User-entered custom exchange rate string: e.g. '95.82'
+  // User-entered custom exchange rate string: e.g. '94.0861'
   const [customRate, setCustomRate] = useState<string>(() => {
-    // If INR to USD or USD to INR, default to a familiar ~83.50
     const toMatch = allCountries.find((c) => c.id === toCountryId) || allCountries[0];
     const fromMatch = allCountries.find((c) => c.id === fromCountryId) || currentCountry;
-    if ((fromMatch.currencyCode === 'INR' && toMatch.currencyCode === 'USD') || 
-        (fromMatch.currencyCode === 'USD' && toMatch.currencyCode === 'INR')) {
-      return '83.50';
-    }
-    return '1.0';
+    return String(getSuggestedBenchmarkRate(fromMatch.currencyCode, toMatch.currencyCode).rate);
   });
 
   // Exchange fee / cost mode: default to 'none' (0% fee) so converted cash is exact
@@ -145,62 +136,14 @@ export const ConversionView: React.FC<ConversionViewProps> = ({
     setToCountryId(prevFrom);
   };
 
-  // Preset quick rates for common pairs if user wants a quick baseline
+  // Suggested benchmark baseline rate for any currency pair in the app
   const handleApplyPresetBaseline = () => {
-    const ratesTable: Record<string, number> = {
-      USD_INR: 83.5,
-      EUR_INR: 90.5,
-      GBP_INR: 105.8,
-      AED_INR: 22.75,
-      SAR_INR: 22.25,
-      CAD_INR: 61.2,
-      AUD_INR: 54.6,
-      SGD_INR: 62.1,
-      USD_EUR: 0.92,
-      EUR_USD: 1.08,
-      USD_GBP: 0.79,
-      GBP_USD: 1.27,
-      USD_AED: 3.67,
-      USD_SAR: 3.75,
-      USD_ILS: 3.72,
-      EUR_ILS: 4.05,
-      GBP_ILS: 4.85,
-      ILS_INR: 22.45,
-      USD_JPY: 152.0,
-      EUR_GBP: 0.86,
-      USD_CNY: 7.23,
-      USD_BRL: 5.15,
-      USD_MXN: 17.5,
-      USD_PKR: 278.0,
-      USD_BDT: 117.0,
-      USD_NPR: 133.5,
-      USD_LKR: 302.0,
-      USD_RUB: 91.5,
-      RUB_INR: 0.91,
-      EUR_XOF: 655.96,
-      EUR_XAF: 655.96,
-      USD_XOF: 605.0,
-      USD_XAF: 605.0,
-      XOF_XAF: 1.0,
-      XAF_XOF: 1.0,
-      XOF_INR: 0.138,
-      XAF_INR: 0.138,
-    };
-
-    const pairFromTo = `${fromCountry.currencyCode}_${toCountry.currencyCode}`;
-    const pairToFrom = `${toCountry.currencyCode}_${fromCountry.currencyCode}`;
-
-    if (ratesTable[pairFromTo]) {
-      setBaseCurrencyCode(fromCountry.currencyCode);
-      setCustomRate(String(ratesTable[pairFromTo]));
-    } else if (ratesTable[pairToFrom]) {
-      // Natural human-memorable direction (e.g. 1 USD = 83.50 INR)
-      setBaseCurrencyCode(toCountry.currencyCode);
-      setCustomRate(String(ratesTable[pairToFrom]));
-    } else {
-      setBaseCurrencyCode(fromCountry.currencyCode);
-      setCustomRate('1.0');
-    }
+    const benchmark = getSuggestedBenchmarkRate(
+      fromCountry.currencyCode,
+      toCountry.currencyCode
+    );
+    setBaseCurrencyCode(benchmark.baseCode);
+    setCustomRate(String(benchmark.rate));
   };
 
   // Rock-solid mathematical calculations
