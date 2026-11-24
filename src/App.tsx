@@ -75,7 +75,8 @@ function ViewLoadingSkeleton() {
     </div>
   );
 }
-import { Banknote, Coins, Layers, Undo2, ArrowLeftRight, FileText, Smartphone, X } from 'lucide-react';
+import { Banknote, Coins, Layers, Undo2, ArrowLeftRight, FileText, Smartphone, X, Info } from 'lucide-react';
+import { getCurrencyAuthorityUrl } from './data/currencyAuthorities';
 import { playChimeSound, playTapSound } from './utils/audio';
 import { usePWAInstall } from './hooks/usePWAInstall';
 import { initAnalytics, trackScreenView } from './utils/analytics';
@@ -557,47 +558,60 @@ export default function App() {
       {currentTab === 'counter' && (
         <div className="flex-1 pb-44 animate-in fade-in duration-150">
           <main className="max-w-4xl w-full mx-auto px-3 sm:px-4 pt-4 flex-1">
-            {/* Navigation / Segmented Tabs: All, Banknotes, Coins */}
+            {/* Navigation / Segmented Tabs: All, Banknotes, Coins + Currency Info Icon */}
             <div className="flex items-center justify-between gap-2 mb-4">
-              <div className="flex items-center p-1 bg-stone-200/80 dark:bg-stone-900 rounded-xl border border-stone-300 dark:border-stone-800 text-xs font-semibold">
-                <button
-                  id="tab-all-denominations"
-                  onClick={() => setActiveTab('all')}
-                  className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition ${
-                    activeTab === 'all'
-                      ? 'bg-white dark:bg-stone-800 text-stone-950 dark:text-white shadow-xs font-bold'
-                      : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200'
-                  }`}
-                >
-                  <Layers className="w-3.5 h-3.5" />
-                  <span>All ({activeDenominations.length})</span>
-                </button>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="flex items-center p-1 bg-stone-200/80 dark:bg-stone-900 rounded-xl border border-stone-300 dark:border-stone-800 text-xs font-semibold">
+                  <button
+                    id="tab-all-denominations"
+                    onClick={() => setActiveTab('all')}
+                    className={`px-2.5 sm:px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition ${
+                      activeTab === 'all'
+                        ? 'bg-white dark:bg-stone-800 text-stone-950 dark:text-white shadow-xs font-bold'
+                        : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200'
+                    }`}
+                  >
+                    <Layers className="w-3.5 h-3.5" />
+                    <span>All ({activeDenominations.length})</span>
+                  </button>
 
-                <button
-                  id="tab-notes-only"
-                  onClick={() => setActiveTab('notes')}
-                  className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition ${
-                    activeTab === 'notes'
-                      ? 'bg-white dark:bg-stone-800 text-emerald-700 dark:text-emerald-400 shadow-xs font-bold'
-                      : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200'
-                  }`}
-                >
-                  <Banknote className="w-3.5 h-3.5" />
-                  <span>Notes ({notes.length})</span>
-                </button>
+                  <button
+                    id="tab-notes-only"
+                    onClick={() => setActiveTab('notes')}
+                    className={`px-2.5 sm:px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition ${
+                      activeTab === 'notes'
+                        ? 'bg-white dark:bg-stone-800 text-emerald-700 dark:text-emerald-400 shadow-xs font-bold'
+                        : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200'
+                    }`}
+                  >
+                    <Banknote className="w-3.5 h-3.5" />
+                    <span>Notes ({notes.length})</span>
+                  </button>
 
-                <button
-                  id="tab-coins-only"
-                  onClick={() => setActiveTab('coins')}
-                  className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition ${
-                    activeTab === 'coins'
-                      ? 'bg-white dark:bg-stone-800 text-amber-700 dark:text-amber-400 shadow-xs font-bold'
-                      : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200'
-                  }`}
+                  <button
+                    id="tab-coins-only"
+                    onClick={() => setActiveTab('coins')}
+                    className={`px-2.5 sm:px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition ${
+                      activeTab === 'coins'
+                        ? 'bg-white dark:bg-stone-800 text-amber-700 dark:text-amber-400 shadow-xs font-bold'
+                        : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200'
+                    }`}
+                  >
+                    <Coins className="w-3.5 h-3.5" />
+                    <span>Coins ({coins.length})</span>
+                  </button>
+                </div>
+
+                <a
+                  id="btn-currency-info"
+                  href={getCurrencyAuthorityUrl(selectedCountry.id)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`${selectedCountry.countryName} ${selectedCountry.currencyCode} info`}
+                  className="p-2 rounded-xl bg-stone-200/80 dark:bg-stone-900 border border-stone-300 dark:border-stone-800 text-stone-600 dark:text-stone-300 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-white dark:hover:bg-stone-800 transition active:scale-95 flex items-center justify-center shrink-0"
                 >
-                  <Coins className="w-3.5 h-3.5" />
-                  <span>Coins ({coins.length})</span>
-                </button>
+                  <Info className="w-4 h-4" />
+                </a>
               </div>
 
               <div className="flex items-center gap-2">
