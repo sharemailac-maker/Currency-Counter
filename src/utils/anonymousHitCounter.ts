@@ -78,7 +78,7 @@ export async function recordAnonymousVisit(): Promise<AnonymousHitStats> {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ clientKnownCount: totalHits }),
+      body: '{}',
     });
 
     if (res.ok) {

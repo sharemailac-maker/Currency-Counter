@@ -10,8 +10,6 @@ import { GiftFooter } from './components/GiftFooter';
 import { FeedbackPromptBanner } from './components/FeedbackPromptBanner';
 import type { SaveTallyFormData } from './components/SaveTallyDialog';
 
-import { EarthGlobeLanding } from './components/EarthGlobeLanding';
-
 function lazyWithRetry<T extends React.ComponentType<any>>(
   factory: () => Promise<{ default: T } | Record<string, T>>
 ): React.LazyExoticComponent<any> {
@@ -36,6 +34,7 @@ function lazyWithRetry<T extends React.ComponentType<any>>(
   });
 }
 
+const EarthGlobeLanding = lazyWithRetry(() => import('./components/EarthGlobeLanding'));
 const HistoryView = lazyWithRetry(() => import('./components/HistoryView'));
 const ConversionView = lazyWithRetry(() => import('./components/ConversionView'));
 const SettingsView = lazyWithRetry(() => import('./components/SettingsView'));

@@ -1,5 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
 import compression from 'compression';
+import net from 'net';
 import path from 'path';
 import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
@@ -8,60 +9,77 @@ import { GoogleGenAI } from '@google/genai';
 const PORT = 3000;
 const HOST = '0.0.0.0';
 
-// In-memory rate limiting map: Normalized IP -> { count, resetTime }
+// In-memory rate limiting map: bucketKey -> { count, resetTime }
 interface RateLimitRecord {
   count: number;
   resetTime: number;
 }
 const rateLimitStore = new Map<string, RateLimitRecord>();
+const MAX_RATE_LIMIT_ENTRIES = 50000;
 
-// Clean up stale rate limit records every 5 minutes to prevent memory leaks
+// Clean up stale rate limit records every 2 minutes without wiping active bans
 setInterval(() => {
   const now = Date.now();
-  for (const [ip, record] of rateLimitStore.entries()) {
+  for (const [key, record] of rateLimitStore.entries()) {
     if (now > record.resetTime) {
-      rateLimitStore.delete(ip);
+      rateLimitStore.delete(key);
     }
   }
-  // Hard memory cap to prevent memory exhaustion under spoofed IP flooding
-  if (rateLimitStore.size > 10000) {
-    rateLimitStore.clear();
+  // Evict oldest keys only if still above hard cap
+  if (rateLimitStore.size > MAX_RATE_LIMIT_ENTRIES) {
+    const excess = rateLimitStore.size - MAX_RATE_LIMIT_ENTRIES + 5000;
+    let removed = 0;
+    for (const key of rateLimitStore.keys()) {
+      rateLimitStore.delete(key);
+      removed += 1;
+      if (removed >= excess) break;
+    }
   }
-}, 5 * 60 * 1000);
+}, 2 * 60 * 1000).unref();
 
 /**
- * Extracts and normalizes client IP securely
+ * Extracts and validates client IP securely using Express trust-proxy resolution and net.isIP
  */
 function getClientIp(req: Request): string {
-  const forwarded = req.headers['x-forwarded-for'];
-  if (typeof forwarded === 'string') {
-    const first = forwarded.split(',')[0]?.trim();
-    if (first && /^[0-9a-fA-F:.]+$/.test(first)) {
-      return first.slice(0, 45);
-    }
+  const candidate = (req.ip || req.socket.remoteAddress || '127.0.0.1').replace(/^::ffff:/i, '').trim();
+  if (net.isIP(candidate)) {
+    return candidate;
   }
-  const remote = req.socket.remoteAddress || '127.0.0.1';
-  return remote.slice(0, 45);
+  const fallback = (req.socket.remoteAddress || '127.0.0.1').replace(/^::ffff:/i, '').trim();
+  return net.isIP(fallback) ? fallback : '127.0.0.1';
 }
 
 /**
- * Rate limiting middleware to prevent bot brute force, DoS, and spam attacks
+ * Scoped rate limiting middleware with bounded storage
  */
-function createRateLimiter(maxRequests: number, windowMs: number, errorMessage = 'Too many requests. Please try again later.') {
+function createRateLimiter(
+  bucketPrefix: string,
+  maxRequests: number,
+  windowMs: number,
+  errorMessage = 'Too many requests. Please try again later.'
+) {
   return (req: Request, res: Response, next: NextFunction): void => {
     const clientIp = getClientIp(req);
+    const key = `${bucketPrefix}:${clientIp}`;
     const now = Date.now();
-    const record = rateLimitStore.get(clientIp);
+    const record = rateLimitStore.get(key);
 
     if (!record || now > record.resetTime) {
-      rateLimitStore.set(clientIp, { count: 1, resetTime: now + windowMs });
+      // Bound map growth even between periodic sweep intervals
+      if (!record && rateLimitStore.size >= MAX_RATE_LIMIT_ENTRIES) {
+        const oldestKey = rateLimitStore.keys().next().value;
+        if (oldestKey !== undefined) {
+          rateLimitStore.delete(oldestKey);
+        }
+      }
+      rateLimitStore.set(key, { count: 1, resetTime: now + windowMs });
       next();
       return;
     }
 
     if (record.count >= maxRequests) {
-      const retryAfter = Math.ceil((record.resetTime - now) / 1000);
-      res.setHeader('Retry-After', retryAfter);
+      const retryAfter = Math.max(1, Math.ceil((record.resetTime - now) / 1000));
+      res.setHeader('Retry-After', String(retryAfter));
       res.status(429).json({
         error: errorMessage,
         retryAfterSeconds: retryAfter,
@@ -69,7 +87,7 @@ function createRateLimiter(maxRequests: number, windowMs: number, errorMessage =
       return;
     }
 
-    record.count++;
+    record.count += 1;
     next();
   };
 }
@@ -84,7 +102,7 @@ function cleanObjectPrototypes<T>(input: T): T {
   if (Array.isArray(input)) {
     return input.map(cleanObjectPrototypes) as unknown as T;
   }
-  const clean: Record<string, unknown> = {};
+  const clean: Record<string, unknown> = Object.create(null);
   for (const key of Object.keys(input as Record<string, unknown>)) {
     if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
       continue;
@@ -123,7 +141,10 @@ function getAIClient(): GoogleGenAI | null {
 async function startServer() {
   const app = express();
 
-  // 1. Remove identifying server headers to prevent hacker reconnaissance
+  // Trust 1 reverse-proxy hop (e.g. Cloud Run / load balancer) for accurate req.ip rate limiting
+  app.set('trust proxy', 1);
+
+  // 1. Remove identifying server headers
   app.disable('x-powered-by');
 
   // Fast gzip/deflate compression for lightning-speed initial page and asset loads
@@ -222,6 +243,8 @@ async function startServer() {
   // ============================================================================
   // SECURE SERVER-SIDE API ROUTES (All secrets kept safely on server)
   // ============================================================================
+  const globalApiLimiter = createRateLimiter('api', 120, 60 * 1000, 'Rate limit exceeded. Please slow down.');
+  app.use('/api', globalApiLimiter);
 
   // Health check endpoint
   app.get('/api/health', (req: Request, res: Response) => {
@@ -235,52 +258,61 @@ async function startServer() {
 
   // ============================================================================
   // ANONYMOUS USER & VISIT HIT COUNTER (ZERO PERSONAL DATA COLLECTED)
-  // Strictly records aggregate hit counts when users visit the app.
+  // Served from memory in O(1) with debounced atomic async persistence for high traffic.
   // ============================================================================
+  const dataDirPath = path.resolve(process.cwd(), 'data');
+  const hitCounterFilePath = path.join(dataDirPath, 'hit-counter.json');
+  const feedbacksFilePath = path.join(dataDirPath, 'feedbacks.json');
+
+  await fs.promises.mkdir(dataDirPath, { recursive: true }).catch(() => undefined);
+
   let memoryHitCount = 1256;
-
-  function getHitCounterFile(): string {
-    const dataDir = path.resolve(process.cwd(), 'data');
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
+  try {
+    const rawText = await fs.promises.readFile(hitCounterFilePath, 'utf8');
+    const parsed = JSON.parse(rawText);
+    if (typeof parsed?.totalHits === 'number' && Number.isFinite(parsed.totalHits) && parsed.totalHits > 0) {
+      memoryHitCount = Math.max(memoryHitCount, Math.floor(parsed.totalHits));
     }
-    return path.join(dataDir, 'hit-counter.json');
+  } catch {
+    // Initial start or missing file uses baseline safely
   }
 
-  function readHitCount(): number {
-    try {
-      const file = getHitCounterFile();
-      if (fs.existsSync(file)) {
-        const raw = JSON.parse(fs.readFileSync(file, 'utf8'));
-        if (typeof raw.totalHits === 'number' && raw.totalHits > 0) {
-          memoryHitCount = Math.max(memoryHitCount, raw.totalHits);
-          return memoryHitCount;
-        }
-      }
-    } catch {
-      // fallback safe value
-    }
-    return memoryHitCount;
+  let hitFlushTimer: ReturnType<typeof setTimeout> | null = null;
+  let hitWriteInFlight: Promise<void> = Promise.resolve();
+  let hitDirty = false;
+
+  async function flushHitCounterToDisk(): Promise<void> {
+    if (!hitDirty) return;
+    hitDirty = false;
+    const countToWrite = memoryHitCount;
+    const tmpFile = `${hitCounterFilePath}.tmp.${process.pid}`;
+    hitWriteInFlight = hitWriteInFlight
+      .then(async () => {
+        await fs.promises.mkdir(dataDirPath, { recursive: true });
+        await fs.promises.writeFile(
+          tmpFile,
+          JSON.stringify({ totalHits: countToWrite, lastUpdated: new Date().toISOString() }, null, 2),
+          'utf8'
+        );
+        await fs.promises.rename(tmpFile, hitCounterFilePath);
+      })
+      .catch(() => {
+        // Retain in-memory count safely even on transient disk error
+      });
+    await hitWriteInFlight;
   }
 
-  function incrementHitCount(clientKnownCount?: number): number {
-    const file = getHitCounterFile();
-    let count = readHitCount();
-    if (typeof clientKnownCount === 'number' && clientKnownCount >= count && clientKnownCount < count + 1000) {
-      count = clientKnownCount;
-    }
-    count += 1;
-    memoryHitCount = count;
-    try {
-      fs.writeFileSync(
-        file,
-        JSON.stringify({ totalHits: count, lastUpdated: new Date().toISOString() }, null, 2)
-      );
-    } catch {
-      // safe fallback
-    }
-    return count;
+  function scheduleHitCounterFlush(): void {
+    hitDirty = true;
+    if (hitFlushTimer) return;
+    hitFlushTimer = setTimeout(() => {
+      hitFlushTimer = null;
+      void flushHitCounterToDisk();
+    }, 2000);
+    hitFlushTimer.unref();
   }
+
+  const hitsWriteLimiter = createRateLimiter('hits', 30, 60 * 1000, 'Too many counter updates. Please slow down.');
 
   app.options('/api/hits', (req: Request, res: Response) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -292,16 +324,15 @@ async function startServer() {
   app.get('/api/hits', (req: Request, res: Response) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Cache-Control', 'no-store, max-age=0');
-    const totalHits = readHitCount();
-    res.json({ totalHits, anonymous: true });
+    res.json({ totalHits: memoryHitCount, anonymous: true });
   });
 
-  app.post('/api/hits', (req: Request, res: Response) => {
+  app.post('/api/hits', hitsWriteLimiter, (req: Request, res: Response) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Cache-Control', 'no-store, max-age=0');
-    const clientKnown = typeof req.body?.clientKnownCount === 'number' ? req.body.clientKnownCount : undefined;
-    const totalHits = incrementHitCount(clientKnown);
-    res.json({ totalHits, anonymous: true, success: true });
+    memoryHitCount += 1;
+    scheduleHitCounterFlush();
+    res.json({ totalHits: memoryHitCount, anonymous: true, success: true });
   });
 
   // Google AdSense Authorized Digital Sellers (/ads.txt)
@@ -338,8 +369,33 @@ async function startServer() {
     return _s.map((b, i) => String.fromCharCode((b ^ _k) - (i % 7))).join('');
   }
 
+  // Serialized async feedback write queue so concurrent submissions never race or block the event loop
+  let feedbackWriteQueue: Promise<void> = Promise.resolve();
+  function enqueueFeedbackWrite(feedbackEntry: Record<string, string>): Promise<void> {
+    feedbackWriteQueue = feedbackWriteQueue
+      .then(async () => {
+        await fs.promises.mkdir(dataDirPath, { recursive: true });
+        let existing: unknown[] = [];
+        try {
+          const content = await fs.promises.readFile(feedbacksFilePath, 'utf8');
+          const parsed = JSON.parse(content);
+          if (Array.isArray(parsed)) existing = parsed;
+        } catch {
+          existing = [];
+        }
+        existing.unshift(feedbackEntry);
+        const tmpFile = `${feedbacksFilePath}.tmp.${process.pid}`;
+        await fs.promises.writeFile(tmpFile, JSON.stringify(existing.slice(0, 200), null, 2), 'utf8');
+        await fs.promises.rename(tmpFile, feedbacksFilePath);
+      })
+      .catch(() => {
+        // Safe fallback on transient disk error
+      });
+    return feedbackWriteQueue;
+  }
+
   // Secure feedback endpoint with strict rate limiting (max 5 requests per 10 minutes per IP)
-  const feedbackLimiter = createRateLimiter(5, 10 * 60 * 1000, 'Too many feedback submissions. Please wait a few minutes.');
+  const feedbackLimiter = createRateLimiter('feedback', 5, 10 * 60 * 1000, 'Too many feedback submissions. Please wait a few minutes.');
 
   app.post('/api/feedback', feedbackLimiter, async (req: Request, res: Response) => {
     try {
@@ -370,28 +426,10 @@ async function startServer() {
         feedback: sanitizedMessage,
       };
 
-      // 1. Securely persist entry to server data folder
-      try {
-        const dataDir = path.resolve(process.cwd(), 'data');
-        if (!fs.existsSync(dataDir)) {
-          fs.mkdirSync(dataDir, { recursive: true });
-        }
-        const feedbacksFile = path.join(dataDir, 'feedbacks.json');
-        let existing: unknown[] = [];
-        if (fs.existsSync(feedbacksFile)) {
-          try {
-            existing = JSON.parse(fs.readFileSync(feedbacksFile, 'utf8'));
-          } catch {
-            existing = [];
-          }
-        }
-        existing.unshift(feedbackEntry);
-        fs.writeFileSync(feedbacksFile, JSON.stringify(existing.slice(0, 200), null, 2));
-      } catch {
-        // safe fallback
-      }
+      // 1. Asynchronously persist entry via serialized atomic queue
+      await enqueueFeedbackWrite(feedbackEntry);
 
-      // 2. Relay via masked endpoint strictly on server: raw recipient email is never stored or exposed
+      // 2. Relay via masked endpoint strictly on server with strict 5s timeout
       const relayTarget = getMaskedRelayEndpoint();
       let relaySuccess = false;
       let relayMsg = '';
@@ -399,6 +437,7 @@ async function startServer() {
       try {
         const response = await fetch(`https://formsubmit.co/ajax/${relayTarget}`, {
           method: 'POST',
+          signal: AbortSignal.timeout(5000),
           headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
@@ -443,7 +482,7 @@ async function startServer() {
   });
 
   // Secure AI Gemini API Proxy: Keeps process.env.GEMINI_API_KEY 100% hidden on the server
-  const aiLimiter = createRateLimiter(15, 60 * 1000, 'AI request rate limit reached. Please wait a moment.');
+  const aiLimiter = createRateLimiter('ai', 15, 60 * 1000, 'AI request rate limit reached. Please wait a moment.');
 
   app.post('/api/ai/analyze-cash', aiLimiter, async (req: Request, res: Response) => {
     try {
@@ -482,12 +521,18 @@ async function startServer() {
     }
   });
 
+  // Reject unmatched API routes cleanly in JSON before SPA fallback
+  app.all('/api/*', (req: Request, res: Response) => {
+    res.status(404).json({ error: 'API endpoint not found' });
+  });
+
   // ============================================================================
   // VITE MIDDLEWARE (Development) & STATIC SERVING (Production)
   // ============================================================================
 
   const staticOptions = {
     maxAge: '1d',
+    etag: true,
     setHeaders: (res: Response, filePath: string) => {
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader('Timing-Allow-Origin', '*');
@@ -511,6 +556,7 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');
+    const cachedIndexHtml = await fs.promises.readFile(path.join(distPath, 'index.html')).catch(() => null);
     app.use(express.static(distPath, staticOptions));
     app.get('*', (req: Request, res: Response) => {
       if (req.path.startsWith('/assets/')) {
@@ -518,6 +564,10 @@ async function startServer() {
         return;
       }
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      if (cachedIndexHtml) {
+        res.type('text/html; charset=utf-8').send(cachedIndexHtml);
+        return;
+      }
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
@@ -530,9 +580,26 @@ async function startServer() {
     res.status(500).json({ error: 'A secure error occurred. Request terminated.' });
   });
 
-  app.listen(PORT, HOST, () => {
+  const server = app.listen(PORT, HOST, () => {
     console.log(`[Security Shield Active] Server running securely on http://${HOST}:${PORT}`);
   });
+
+  // Align HTTP keep-alive timeouts with GCP / Cloud Run load balancer (>60s)
+  server.keepAliveTimeout = 65000;
+  server.headersTimeout = 66000;
+
+  const handleShutdown = async () => {
+    if (hitFlushTimer) {
+      clearTimeout(hitFlushTimer);
+      hitFlushTimer = null;
+    }
+    await flushHitCounterToDisk();
+    server.close(() => {
+      process.exit(0);
+    });
+  };
+  process.once('SIGINT', () => { void handleShutdown(); });
+  process.once('SIGTERM', () => { void handleShutdown(); });
 }
 
 startServer();

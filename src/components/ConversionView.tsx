@@ -22,6 +22,7 @@ import { copyToClipboard } from '../utils/clipboard';
 import { FinancialCalculators } from './FinancialCalculators';
 import { GiftFooter } from './GiftFooter';
 import { getSuggestedBenchmarkRate } from '../data/exchangeRates';
+import { escapeHtml } from '../utils/security';
 
 interface ConversionViewProps {
   currentCountry: CountryCurrency;
@@ -238,6 +239,7 @@ export const ConversionView: React.FC<ConversionViewProps> = ({
   const handlePrintQuote = () => {
     try {
       const iframe = document.createElement('iframe');
+      iframe.setAttribute('sandbox', 'allow-same-origin allow-modals');
       iframe.style.position = 'fixed';
       iframe.style.right = '0';
       iframe.style.bottom = '0';
@@ -267,12 +269,26 @@ export const ConversionView: React.FC<ConversionViewProps> = ({
         ? `Flat Fee (${flatFeeCurrency === 'from' ? fromCountry.currencyCode : toCountry.currencyCode})`
         : '0% (No Fee)';
 
+      const safeFromCode = escapeHtml(fromCountry.currencyCode);
+      const safeToCode = escapeHtml(toCountry.currencyCode);
+      const safeFromSymbol = escapeHtml(fromCountry.currencySymbol);
+      const safeToSymbol = escapeHtml(toCountry.currencySymbol);
+      const safeFromName = escapeHtml(fromCountry.countryName);
+      const safeToName = escapeHtml(toCountry.countryName);
+      const safeFromFlag = escapeHtml(fromCountry.flag);
+      const safeToFlag = escapeHtml(toCountry.flag);
+      const safeBaseCode = escapeHtml(baseCurrencyCode);
+      const safeQuoteCode = escapeHtml(quoteCurrencyCode);
+      const safeRateStr = escapeHtml(calculations.rate);
+      const safeDateStr = escapeHtml(dateStr);
+      const safeFeeLabel = escapeHtml(feeLabel);
+
       frameDoc.open();
       frameDoc.write(`<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Currency Conversion Quote - ${fromCountry.currencyCode} to ${toCountry.currencyCode}</title>
+  <title>Currency Conversion Quote - ${safeFromCode} to ${safeToCode}</title>
   <style>
     @page {
       size: portrait;
@@ -422,39 +438,39 @@ export const ConversionView: React.FC<ConversionViewProps> = ({
       <div class="app-title">CURRENCY COUNTER</div>
       <div class="sub-title">100% Offline Multi-Currency Financial Tools</div>
       <div class="doc-title">FOREIGN EXCHANGE QUOTATION VOUCHER</div>
-      <div style="font-size: 10px; color: #555; margin-top: 4px;">Date/Time: ${dateStr}</div>
+      <div style="font-size: 10px; color: #555; margin-top: 4px;">Date/Time: ${safeDateStr}</div>
     </div>
 
     <table>
       <tbody>
         <tr>
           <td style="color: #555; width: 45%;">Source Currency (From):</td>
-          <td class="font-bold font-mono text-right">${fromCountry.countryName} ${fromCountry.flag} (${fromCountry.currencyCode})</td>
+          <td class="font-bold font-mono text-right">${safeFromName} ${safeFromFlag} (${safeFromCode})</td>
         </tr>
         <tr>
           <td style="color: #555;">Source Cash Amount:</td>
-          <td class="font-bold font-mono text-right" style="font-size: 13px;">${fromCountry.currencySymbol} ${calculations.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${fromCountry.currencyCode}</td>
+          <td class="font-bold font-mono text-right" style="font-size: 13px;">${safeFromSymbol} ${calculations.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${safeFromCode}</td>
         </tr>
         <tr>
           <td style="color: #555;">Target Currency (To):</td>
-          <td class="font-bold font-mono text-right">${toCountry.countryName} ${toCountry.flag} (${toCountry.currencyCode})</td>
+          <td class="font-bold font-mono text-right">${safeToName} ${safeToFlag} (${safeToCode})</td>
         </tr>
         <tr>
           <td style="color: #555;">Exchange Rate Applied:</td>
-          <td class="font-bold font-mono text-right">1 ${baseCurrencyCode} = ${calculations.rate} ${quoteCurrencyCode}</td>
+          <td class="font-bold font-mono text-right">1 ${safeBaseCode} = ${safeRateStr} ${safeQuoteCode}</td>
         </tr>
         ${!calculations.isBaseSource && calculations.effectiveUnitRate > 0 ? `
         <tr>
           <td style="color: #777; font-size: 10px;">Unit Multiplier:</td>
-          <td class="font-mono text-right" style="font-size: 10px; color: #555;">1 ${fromCountry.currencyCode} = ${calculations.effectiveUnitRate >= 1 ? calculations.effectiveUnitRate.toFixed(4) : calculations.effectiveUnitRate.toFixed(6)} ${toCountry.currencyCode}</td>
+          <td class="font-mono text-right" style="font-size: 10px; color: #555;">1 ${safeFromCode} = ${calculations.effectiveUnitRate >= 1 ? calculations.effectiveUnitRate.toFixed(4) : calculations.effectiveUnitRate.toFixed(6)} ${safeToCode}</td>
         </tr>` : ''}
         <tr>
           <td style="color: #555;">Gross Converted:</td>
-          <td class="font-bold font-mono text-right">${toCountry.currencySymbol} ${calculations.grossConverted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+          <td class="font-bold font-mono text-right">${safeToSymbol} ${calculations.grossConverted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
         </tr>
         <tr>
           <td style="color: #555;">Exchange Fee / Commission:</td>
-          <td class="font-bold font-mono text-right" style="color: #b45309;">- ${toCountry.currencySymbol} ${calculations.feeDeductedInTarget.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${feeLabel})</td>
+          <td class="font-bold font-mono text-right" style="color: #b45309;">- ${safeToSymbol} ${calculations.feeDeductedInTarget.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${safeFeeLabel})</td>
         </tr>
       </tbody>
     </table>
@@ -466,13 +482,13 @@ export const ConversionView: React.FC<ConversionViewProps> = ({
           <div style="font-size: 10px; color: #166534;">Final cash in hand after all conversion fees</div>
         </div>
         <div class="net-amount">
-          ${toCountry.currencySymbol} ${calculations.netReceived.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span style="font-size: 13px; font-weight: 700;">${toCountry.currencyCode}</span>
+          ${safeToSymbol} ${calculations.netReceived.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span style="font-size: 13px; font-weight: 700;">${safeToCode}</span>
         </div>
       </div>
     </div>
 
     <div style="font-size: 10px; color: #555; margin-top: 4px;">
-      Effective Post-Fee Rate: <strong class="font-mono">1 ${fromCountry.currencyCode} = ${calculations.postFeeEffectiveRate >= 1 ? calculations.postFeeEffectiveRate.toFixed(4) : calculations.postFeeEffectiveRate.toFixed(6)} ${toCountry.currencyCode}</strong>
+      Effective Post-Fee Rate: <strong class="font-mono">1 ${safeFromCode} = ${calculations.postFeeEffectiveRate >= 1 ? calculations.postFeeEffectiveRate.toFixed(4) : calculations.postFeeEffectiveRate.toFixed(6)} ${safeToCode}</strong>
     </div>
 
     <div class="signatures">

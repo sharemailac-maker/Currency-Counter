@@ -140,6 +140,7 @@ export const BreakdownModal: React.FC<BreakdownModalProps> = ({
 
     try {
       const iframe = document.createElement('iframe');
+      iframe.setAttribute('sandbox', 'allow-same-origin allow-modals');
       iframe.style.position = 'fixed';
       iframe.style.right = '0';
       iframe.style.bottom = '0';
@@ -155,6 +156,7 @@ export const BreakdownModal: React.FC<BreakdownModalProps> = ({
       }
 
       const printWidth = effectiveIsTwoCol ? '680px' : '460px';
+      const safeSlipMarkup = slip.innerHTML.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
 
       frameDoc.open();
       frameDoc.write(`<!DOCTYPE html>
@@ -324,7 +326,7 @@ export const BreakdownModal: React.FC<BreakdownModalProps> = ({
 </head>
 <body>
   <div class="receipt-box font-mono">
-    ${slip.innerHTML}
+    ${safeSlipMarkup}
   </div>
 </body>
 </html>`);

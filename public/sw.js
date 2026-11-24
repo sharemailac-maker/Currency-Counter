@@ -72,24 +72,33 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Stale-While-Revalidate for built static assets (never cache HTML error fallbacks as JS/CSS)
+  // Immutable content-hashed Vite bundles: pure Cache-First (zero background server hit once cached)
+  const isImmutableHashedAsset =
+    url.pathname.startsWith('/assets/c-') ||
+    url.pathname.startsWith('/assets/e-') ||
+    url.pathname.startsWith('/assets/a-') ||
+    /\/assets\/.*-[A-Za-z0-9_-]{6,}\.(js|css|woff2?|png|svg|jpg|webp)$/.test(url.pathname);
+
+  // Stale-While-Revalidate for unhashed assets; Cache-First for immutable hashed bundles
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
       if (cachedResponse) {
-        fetch(request)
-          .then((networkResponse) => {
-            const contentType = networkResponse.headers.get('content-type') || '';
-            if (
-              networkResponse &&
-              networkResponse.ok &&
-              networkResponse.type === 'basic' &&
-              !(url.pathname.startsWith('/assets/') && contentType.includes('text/html'))
-            ) {
-              const copy = networkResponse.clone();
-              caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
-            }
-          })
-          .catch(() => {});
+        if (!isImmutableHashedAsset) {
+          fetch(request)
+            .then((networkResponse) => {
+              const contentType = networkResponse.headers.get('content-type') || '';
+              if (
+                networkResponse &&
+                networkResponse.ok &&
+                networkResponse.type === 'basic' &&
+                !(url.pathname.startsWith('/assets/') && contentType.includes('text/html'))
+              ) {
+                const copy = networkResponse.clone();
+                caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+              }
+            })
+            .catch(() => {});
+        }
         return cachedResponse;
       }
 

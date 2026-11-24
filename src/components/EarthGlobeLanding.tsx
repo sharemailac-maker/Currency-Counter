@@ -65,6 +65,26 @@ function generateTinyStars(count: number): StarData[] {
   return stars;
 }
 
+const StarfieldBackground = React.memo(({ stars }: { stars: StarData[] }) => (
+  <div id="cosmos-tiny-stars-layer" className="absolute inset-0 pointer-events-none z-0">
+    {stars.map((star) => (
+      <div
+        key={star.id}
+        className={`absolute rounded-full bg-white ${star.animClass}`}
+        style={{
+          top: `${star.top}%`,
+          left: `${star.left}%`,
+          width: `${star.size}px`,
+          height: `${star.size}px`,
+          opacity: star.opacity,
+          animationDelay: star.delay,
+          boxShadow: star.size > 1.5 ? '0 0 2px rgba(255,255,255,0.9)' : 'none',
+        }}
+      />
+    ))}
+  </div>
+));
+
 /**
  * Calculates the ideal camera distance so that the Earth sphere fits
  * comfortably on screen with a small side margin on mobile, tablet, and PC.
@@ -105,8 +125,12 @@ export const EarthGlobeLanding: React.FC<EarthGlobeLandingProps> = ({
   // List modal state
   const [isListModalOpen, setIsListModalOpen] = useState(false);
 
-  // Auto rotation state
+  // Auto rotation state mirrored in ref so WebGL scene never tears down on toggle
   const [isAutoRotating, setIsAutoRotating] = useState(true);
+  const isAutoRotatingRef = useRef(isAutoRotating);
+  useEffect(() => {
+    isAutoRotatingRef.current = isAutoRotating;
+  }, [isAutoRotating]);
 
   // Projected pin positions on screen
   const [pinPositions, setPinPositions] = useState<ProjectedCountryPin[]>([]);
@@ -277,10 +301,20 @@ export const EarthGlobeLanding: React.FC<EarthGlobeLandingProps> = ({
 
     const textureLoader = new THREE.TextureLoader();
     textureLoader.setCrossOrigin('anonymous');
+    // Track dirty flags so stationary scenes consume zero GPU/CPU and pin updates stay throttled
+    let needsRender = true;
+    let lastRotX = Number.NaN;
+    let lastRotY = Number.NaN;
+    let lastDist = Number.NaN;
+    let lastW = width;
+    let lastH = height;
+    let lastPinSyncTime = 0;
+
     // Load local NASA Earth texture
     const earthTexture = textureLoader.load(
       '/assets/earth_texture.jpg',
       () => {
+        needsRender = true;
         renderer.render(scene, camera);
       },
       undefined,
@@ -351,57 +385,69 @@ export const EarthGlobeLanding: React.FC<EarthGlobeLandingProps> = ({
           state.velY *= 0.935;
           // Clamp latitude rotation smoothly
           state.rotationX = Math.max(-1.25, Math.min(1.25, state.rotationX));
-        } else if (isAutoRotating) {
+        } else if (isAutoRotatingRef.current) {
           // Gentle slow spin when idle
           state.rotationY += 0.0016;
         }
       }
 
-      // Update Globe Group Orientation
-      globeGroup.rotation.x = state.rotationX;
-      globeGroup.rotation.y = state.rotationY;
-
-      // Render Scene
-      renderer.render(scene, camera);
-
-      // Project 42 Country Pins to Screen Coordinates
       const currentWidth = container.clientWidth || width;
       const currentHeight = container.clientHeight || height;
-      const newPinPositions: ProjectedCountryPin[] = [];
+      const hasTransformChanged =
+        needsRender ||
+        Math.abs(state.rotationX - lastRotX) > 0.00005 ||
+        Math.abs(state.rotationY - lastRotY) > 0.00005 ||
+        Math.abs(state.cameraDistance - lastDist) > 0.05 ||
+        currentWidth !== lastW ||
+        currentHeight !== lastH;
 
-      state.countryVectors.forEach((baseVec, countryId) => {
-        const countryData = countryMap.get(countryId);
-        if (!countryData) return;
+      if (hasTransformChanged) {
+        needsRender = false;
+        lastRotX = state.rotationX;
+        lastRotY = state.rotationY;
+        lastDist = state.cameraDistance;
+        lastW = currentWidth;
+        lastH = currentHeight;
 
-        // Apply globe rotation to base vector
-        tempVec.copy(baseVec).applyEuler(globeGroup.rotation);
+        // Update Globe Group Orientation
+        globeGroup.rotation.x = state.rotationX;
+        globeGroup.rotation.y = state.rotationY;
 
-        // Visibility / Occlusion check:
-        // When tempVec.z > -8, the point is on the hemisphere facing the camera
-        const isFacing = tempVec.z > -5;
+        // Render Scene
+        renderer.render(scene, camera);
 
-        if (isFacing) {
-          projVec.copy(tempVec).project(camera);
-
-          const screenX = (projVec.x * 0.5 + 0.5) * currentWidth;
-          const screenY = (-projVec.y * 0.5 + 0.5) * currentHeight;
-
-          // Scale pin gently based on camera distance relative to default distance
+        // Throttle React DOM overlay projection to ~25fps to prevent excessive DOM reconciliation
+        const now = performance.now();
+        if (lastPinSyncTime === 0 || now - lastPinSyncTime >= 40) {
+          lastPinSyncTime = now;
+          const newPinPositions: ProjectedCountryPin[] = [];
           const refDist = state.defaultDistance || 380;
           const scale = Math.max(0.68, Math.min(1.2, (refDist * 0.95) / state.cameraDistance));
 
-          newPinPositions.push({
-            id: countryId,
-            country: countryData,
-            x: screenX,
-            y: screenY,
-            visible: true,
-            scale,
-          });
-        }
-      });
+          state.countryVectors.forEach((baseVec, countryId) => {
+            const countryData = countryMap.get(countryId);
+            if (!countryData) return;
 
-      setPinPositions(newPinPositions);
+            tempVec.copy(baseVec).applyEuler(globeGroup.rotation);
+            if (tempVec.z > -5) {
+              projVec.copy(tempVec).project(camera);
+              const screenX = Math.round(((projVec.x * 0.5 + 0.5) * currentWidth) * 10) / 10;
+              const screenY = Math.round(((-projVec.y * 0.5 + 0.5) * currentHeight) * 10) / 10;
+
+              newPinPositions.push({
+                id: countryId,
+                country: countryData,
+                x: screenX,
+                y: screenY,
+                visible: true,
+                scale,
+              });
+            }
+          });
+
+          setPinPositions(newPinPositions);
+        }
+      }
 
       state.animFrameId = requestAnimationFrame(animate);
     };
@@ -416,9 +462,9 @@ export const EarthGlobeLanding: React.FC<EarthGlobeLandingProps> = ({
           camera.aspect = newW / newH;
           camera.updateProjectionMatrix();
           renderer.setSize(newW, newH);
-
-          const newFitted = calculateFittedDistance(newW, newH);
-          threeState.current.defaultDistance = newFitted;
+          threeState.current.defaultDistance = calculateFittedDistance(newW, newH);
+          needsRender = true;
+          lastPinSyncTime = 0;
         }
       }
     });
@@ -435,7 +481,7 @@ export const EarthGlobeLanding: React.FC<EarthGlobeLandingProps> = ({
       atmosphereMat.dispose();
       earthTexture.dispose();
     };
-  }, [isAutoRotating, countryMap]);
+  }, [countryMap]);
 
   // Prevent mobile pull-to-refresh on vertical drag
   useEffect(() => {
@@ -629,23 +675,7 @@ export const EarthGlobeLanding: React.FC<EarthGlobeLandingProps> = ({
       onTouchEnd={handleTouchEnd}
     >
       {/* 1. Background: Pure dark space with ONLY tiny blinking stars */}
-      <div id="cosmos-tiny-stars-layer" className="absolute inset-0 pointer-events-none z-0">
-        {tinyStars.map((star) => (
-          <div
-            key={star.id}
-            className={`absolute rounded-full bg-white ${star.animClass}`}
-            style={{
-              top: `${star.top}%`,
-              left: `${star.left}%`,
-              width: `${star.size}px`,
-              height: `${star.size}px`,
-              opacity: star.opacity,
-              animationDelay: star.delay,
-              boxShadow: star.size > 1.5 ? '0 0 2px rgba(255,255,255,0.9)' : 'none',
-            }}
-          />
-        ))}
-      </div>
+      <StarfieldBackground stars={tinyStars} />
 
       {/* 2. Top Header Bar: Global Currency Ball with digital Earth symbol */}
       <header className="absolute top-3.5 left-3.5 sm:top-4 sm:left-4 z-30 flex items-center gap-3 pointer-events-auto">
