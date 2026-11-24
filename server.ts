@@ -131,15 +131,16 @@ async function startServer() {
 
   // 2. Strict Security Headers & CSP
   app.use((req: Request, res: Response, next: NextFunction) => {
-    // Content Security Policy: Protect against XSS while allowing embedding in AI Studio preview and Google Tag Manager
+    // Content Security Policy: Protect against XSS while allowing AI Studio preview, GA4, and Google AdSense
     res.setHeader(
       'Content-Security-Policy',
       "default-src 'self'; " +
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://*.googletagmanager.com https://tagmanager.google.com https://www.google-analytics.com https://*.google-analytics.com https://*.google.com; " +
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.googletagmanager.com https://tagmanager.google.com; " +
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://*.googletagmanager.com https://tagmanager.google.com https://www.google-analytics.com https://*.google-analytics.com https://*.google.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.doubleclick.net https://*.googleadservices.com https://*.adtrafficquality.google https://*.gstatic.com; " +
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.googletagmanager.com https://tagmanager.google.com https://*.googlesyndication.com https://*.doubleclick.net; " +
       "font-src 'self' data: https://fonts.gstatic.com; " +
-      "img-src 'self' data: blob: https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://*.googletagmanager.com https://*.analytics.google.com https://analytics.google.com https://stats.g.doubleclick.net https://*.g.doubleclick.net https://*.google.com; " +
-      "connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://*.googletagmanager.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://*.g.doubleclick.net https://*.google.com; " +
+      "img-src 'self' data: blob: https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://*.googletagmanager.com https://*.analytics.google.com https://analytics.google.com https://stats.g.doubleclick.net https://*.g.doubleclick.net https://*.google.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.doubleclick.net https://*.googleadservices.com https://*.adtrafficquality.google https://*.gstatic.com; " +
+      "connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://*.googletagmanager.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://*.g.doubleclick.net https://*.google.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.doubleclick.net https://*.googleadservices.com https://*.adtrafficquality.google; " +
+      "frame-src 'self' https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.doubleclick.net https://*.google.com https://*.adtrafficquality.google; " +
       "frame-ancestors 'self' https://ai.studio https://*.google.com https://*.googleusercontent.com https://*.run.app; " +
       "object-src 'none'; " +
       "base-uri 'self'; " +
@@ -303,12 +304,20 @@ async function startServer() {
     res.json({ totalHits, anonymous: true, success: true });
   });
 
-  // Search Engine & Crawler Endpoints for Google Search Console
+  // Google AdSense Authorized Digital Sellers (/ads.txt)
+  app.get('/ads.txt', (req: Request, res: Response) => {
+    res.type('text/plain; charset=utf-8');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.send('google.com, pub-4754025584591104, DIRECT, f08c47fec0942fa0\n');
+  });
+
+  // Search Engine & Crawler Endpoints for Google Search Console & AdSense
   app.get('/robots.txt', (req: Request, res: Response) => {
     res.type('text/plain');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Cache-Control', 'public, max-age=3600');
-    res.send(`User-agent: *\nAllow: /\nDisallow: /api/\n\nSitemap: https://currency-counter.ai.studio/sitemap.xml\n`);
+    res.send(`User-agent: Mediapartners-Google\nAllow: /\n\nUser-agent: Google-Display-Ads-Bot\nAllow: /\n\nUser-agent: *\nAllow: /\nDisallow: /api/\n\nSitemap: https://currency-counter.ai.studio/sitemap.xml\n`);
   });
 
   app.get('/sitemap.xml', (req: Request, res: Response) => {

@@ -44,6 +44,7 @@ self.addEventListener('fetch', (event) => {
     url.pathname.startsWith('/@react-refresh') ||
     url.pathname.startsWith('/src/') ||
     url.pathname.startsWith('/node_modules/') ||
+    url.pathname === '/ads.txt' ||
     url.pathname === '/sw.js'
   ) {
     return;
