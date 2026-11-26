@@ -156,13 +156,13 @@ async function startServer() {
     res.setHeader(
       'Content-Security-Policy',
       "default-src 'self'; " +
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://*.googletagmanager.com https://tagmanager.google.com https://www.google-analytics.com https://*.google-analytics.com https://*.google.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.doubleclick.net https://*.googleadservices.com https://*.adtrafficquality.google https://*.gstatic.com; " +
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.googletagmanager.com https://tagmanager.google.com https://*.googlesyndication.com https://*.doubleclick.net; " +
-      "font-src 'self' data: https://fonts.gstatic.com; " +
-      "img-src 'self' data: blob: https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://*.googletagmanager.com https://*.analytics.google.com https://analytics.google.com https://stats.g.doubleclick.net https://*.g.doubleclick.net https://*.google.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.doubleclick.net https://*.googleadservices.com https://*.adtrafficquality.google https://*.gstatic.com; " +
-      "connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://*.googletagmanager.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://*.g.doubleclick.net https://*.google.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.doubleclick.net https://*.googleadservices.com https://*.adtrafficquality.google; " +
-      "frame-src 'self' https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.doubleclick.net https://*.google.com https://*.adtrafficquality.google; " +
-      "frame-ancestors 'self' https://ai.studio https://*.google.com https://*.googleusercontent.com https://*.run.app; " +
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://*.googletagmanager.com https://tagmanager.google.com https://www.google-analytics.com https://*.google-analytics.com https://*.google.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.doubleclick.net https://*.googleadservices.com https://*.adtrafficquality.google https://*.gstatic.com https://fundingchoicesmessages.google.com; " +
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.googletagmanager.com https://tagmanager.google.com https://*.googlesyndication.com https://*.doubleclick.net https://fundingchoicesmessages.google.com https://*.gstatic.com; " +
+      "font-src 'self' data: https://fonts.gstatic.com https://*.gstatic.com; " +
+      "img-src 'self' data: blob: https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://*.googletagmanager.com https://*.analytics.google.com https://analytics.google.com https://stats.g.doubleclick.net https://*.g.doubleclick.net https://*.google.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.doubleclick.net https://*.googleadservices.com https://*.adtrafficquality.google https://*.gstatic.com https://fundingchoicesmessages.google.com; " +
+      "connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://*.googletagmanager.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://*.g.doubleclick.net https://*.google.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.doubleclick.net https://*.googleadservices.com https://*.adtrafficquality.google https://fundingchoicesmessages.google.com https://*.gstatic.com; " +
+      "frame-src 'self' https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.doubleclick.net https://*.google.com https://*.adtrafficquality.google https://fundingchoicesmessages.google.com; " +
+      "frame-ancestors 'self' https://ai.studio https://*.google.com https://*.googleusercontent.com https://*.run.app https://*.googlesyndication.com https://*.doubleclick.net; " +
       "object-src 'none'; " +
       "base-uri 'self'; " +
       "form-action 'self';"
@@ -343,19 +343,37 @@ async function startServer() {
     res.send('google.com, pub-4754025584591104, DIRECT, f08c47fec0942fa0\n');
   });
 
+  function getSafeRequestOrigin(req: Request): string {
+    const forwardedHost = req.get('x-forwarded-host')?.split(',')[0]?.trim();
+    const rawHost = forwardedHost || req.get('host')?.trim() || '';
+    const safeHost = /^[a-zA-Z0-9.-]+(:\d{1,5})?$/.test(rawHost) ? rawHost : '';
+    if (!safeHost) return '';
+    const forwardedProto = req.get('x-forwarded-proto')?.split(',')[0]?.trim().toLowerCase();
+    const isLocal = safeHost.startsWith('localhost') || safeHost.startsWith('127.0.0.1');
+    const proto = forwardedProto === 'http' || forwardedProto === 'https'
+      ? forwardedProto
+      : (isLocal ? 'http' : 'https');
+    return `${proto}://${safeHost}`;
+  }
+
   // Search Engine & Crawler Endpoints for Google Search Console & AdSense
   app.get('/robots.txt', (req: Request, res: Response) => {
-    res.type('text/plain');
+    res.type('text/plain; charset=utf-8');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Cache-Control', 'public, max-age=3600');
-    res.send(`User-agent: Mediapartners-Google\nAllow: /\n\nUser-agent: Google-Display-Ads-Bot\nAllow: /\n\nUser-agent: *\nAllow: /\nDisallow: /api/\n\nSitemap: https://currency-counter.ai.studio/sitemap.xml\n`);
+    const origin = getSafeRequestOrigin(req);
+    const sitemapLine = origin ? `\nSitemap: ${origin}/sitemap.xml\n` : '\n';
+    res.send(
+      `User-agent: Mediapartners-Google\nAllow: /\n\nUser-agent: AdsBot-Google\nAllow: /\n\nUser-agent: AdsBot-Google-Mobile\nAllow: /\n\nUser-agent: Google-Display-Ads-Bot\nAllow: /\n\nUser-agent: Googlebot\nAllow: /\n\nUser-agent: *\nAllow: /\nDisallow: /api/\n${sitemapLine}`
+    );
   });
 
   app.get('/sitemap.xml', (req: Request, res: Response) => {
-    res.type('application/xml');
+    res.type('application/xml; charset=utf-8');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Cache-Control', 'public, max-age=3600');
-    res.send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n  <url>\n    <loc>https://currency-counter.ai.studio/</loc>\n    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>1.0</priority>\n    <image:image>\n      <image:loc>https://currency-counter.ai.studio/app-icon.png</image:loc>\n      <image:title>Currency Counter - Cash Denomination Counter &amp; Financial Calculators</image:title>\n      <image:caption>Cash denomination tally counter, currency converter, and financial calculators for 47+ countries.</image:caption>\n    </image:image>\n  </url>\n</urlset>\n`);
+    const origin = getSafeRequestOrigin(req) || 'https://ais-pre-broydzy55ng6nw3ttam55a-146603361802.asia-southeast1.run.app';
+    res.send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n  <url>\n    <loc>${origin}/</loc>\n    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>1.0</priority>\n    <image:image>\n      <image:loc>${origin}/app-icon.png</image:loc>\n      <image:title>Currency Counter - Cash Denomination Counter &amp; Financial Calculators</image:title>\n      <image:caption>Cash denomination tally counter, currency converter, and financial calculators for 47+ countries.</image:caption>\n    </image:image>\n  </url>\n</urlset>\n`);
   });
 
   // Internal masked vault resolver: dynamically decodes recipient endpoint at runtime in ephemeral memory.

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { COUNTRIES } from './data/currencies';
 import { CountryCurrency, Denomination, DenominationCounts, SavedTally } from './types';
 import { numberToWords } from './utils/numberToWords';
@@ -46,7 +46,6 @@ const SaveTallyDialog = lazyWithRetry(() => import('./components/SaveTallyDialog
 const ResetConfirmModal = lazyWithRetry(() => import('./components/ResetConfirmModal'));
 const DeleteConfirmModal = lazyWithRetry(() => import('./components/DeleteConfirmModal'));
 const FeedbackModal = lazyWithRetry(() => import('./components/FeedbackModal'));
-const AdSenseOverlay = lazyWithRetry(() => import('./components/AdSenseOverlay'));
 
 function GlobeLoadingSkeleton() {
   return (
@@ -86,12 +85,6 @@ import { getCompanyMode, setCompanyMode } from './utils/companyMode';
 import { ActiveCalculatorType } from './types';
 import { getActiveCalculator } from './utils/calculatorSettings';
 import { safeJsonParse } from './utils/security';
-import {
-  getOfflineOnlyMode,
-  setOfflineOnlyMode,
-  isDeviceOnline,
-  loadAdSenseScript,
-} from './utils/adsense';
 
 const STORAGE_KEY_COUNTRY = 'currency_counter_country_id';
 const STORAGE_KEY_COUNTS = 'currency_counter_counts_v1';
@@ -176,91 +169,6 @@ export default function App() {
   useEffect(() => {
     trackScreenView(currentTab);
   }, [currentTab]);
-
-  // Online-only transient AdSense overlay (zero permanent ad slots; respects Offline Mode)
-  const [isOnline, setIsOnline] = useState<boolean>(isDeviceOnline);
-  const [offlineOnlyMode, setOfflineOnlyState] = useState<boolean>(getOfflineOnlyMode);
-  const [isAdOverlayOpen, setIsAdOverlayOpen] = useState<boolean>(false);
-  const lastAdShownAtRef = useRef<number>(0);
-  const wasOfflineRef = useRef<boolean>(!isDeviceOnline());
-
-  useEffect(() => {
-    const handleOnline = () => {
-      setIsOnline(true);
-      if (!getOfflineOnlyMode()) {
-        loadAdSenseScript();
-        // If user just came online while using the app, trigger a brief dismissible ad
-        const now = Date.now();
-        if (wasOfflineRef.current && now - lastAdShownAtRef.current >= 60_000) {
-          lastAdShownAtRef.current = now;
-          setIsAdOverlayOpen(true);
-        }
-      }
-      wasOfflineRef.current = false;
-    };
-
-    const handleOffline = () => {
-      setIsOnline(false);
-      wasOfflineRef.current = true;
-      setIsAdOverlayOpen(false);
-    };
-
-    const handleOfflineModeChanged = (e: Event) => {
-      const customEvent = e as CustomEvent<{ enabled: boolean }>;
-      const next = Boolean(customEvent.detail?.enabled ?? getOfflineOnlyMode());
-      setOfflineOnlyState(next);
-      if (next) {
-        setIsAdOverlayOpen(false);
-      }
-    };
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    window.addEventListener('offline_mode_changed', handleOfflineModeChanged);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-      window.removeEventListener('offline_mode_changed', handleOfflineModeChanged);
-    };
-  }, []);
-
-  // Load AdSense and display transient dismissible ad when user is online & actively using the app
-  useEffect(() => {
-    if (!isOnline || offlineOnlyMode) {
-      setIsAdOverlayOpen(false);
-      return;
-    }
-
-    loadAdSenseScript();
-
-    // Only surface during active workspace tabs (never block initial landing globe)
-    if (currentTab === 'home') return;
-
-    const COOLDOWN_MS = 3 * 60 * 1000;
-    const now = Date.now();
-    if (lastAdShownAtRef.current > 0 && now - lastAdShownAtRef.current < COOLDOWN_MS) {
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      if (isDeviceOnline() && !getOfflineOnlyMode()) {
-        lastAdShownAtRef.current = Date.now();
-        setIsAdOverlayOpen(true);
-      }
-    }, 6000);
-
-    return () => clearTimeout(timer);
-  }, [isOnline, offlineOnlyMode, currentTab]);
-
-  const handleCloseAdOverlay = useCallback(() => {
-    setIsAdOverlayOpen(false);
-  }, []);
-
-  const handleSwitchToOfflineFromAd = useCallback(() => {
-    setOfflineOnlyMode(true);
-    setOfflineOnlyState(true);
-    setIsAdOverlayOpen(false);
-  }, []);
 
   // 1. Country Selection (Default to Bharat / India, with all global list sorted alphabetically)
   const [selectedCountry, setSelectedCountry] = useState<CountryCurrency>(() => {
@@ -973,14 +881,6 @@ export default function App() {
         <FeedbackModal
           isOpen={isFeedbackModalOpen}
           onClose={() => setIsFeedbackModalOpen(false)}
-        />
-
-        {/* Transient Online-Only AdSense Overlay (Auto-closes & always dismissible; 0 permanent layout space) */}
-        <AdSenseOverlay
-          isOpen={isAdOverlayOpen}
-          onClose={handleCloseAdOverlay}
-          onSwitchOffline={handleSwitchToOfflineFromAd}
-          autoCloseSeconds={5}
         />
       </Suspense>
     </div>

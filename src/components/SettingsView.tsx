@@ -25,8 +25,7 @@ import {
   ArrowLeftRight,
   ChevronDown,
   ChevronUp,
-  ChevronRight,
-  WifiOff
+  ChevronRight
 } from 'lucide-react';
 import { playChimeSound } from '../utils/audio';
 import { FeedbackModal } from './FeedbackModal';
@@ -47,7 +46,6 @@ import {
 import { safeJsonParse, cleanPrototypePollution } from '../utils/security';
 import { APP_VERSION } from '../utils/appVersion';
 import { checkForAppUpdates, reloadAndApplyUpdate } from '../utils/appUpdate';
-import { getOfflineOnlyMode, setOfflineOnlyMode } from '../utils/adsense';
 
 interface SettingsViewProps {
   soundEnabled: boolean;
@@ -97,28 +95,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   // Dropdown open states for collapsible sections
   const [isOtherCalcsDropdownOpen, setIsOtherCalcsDropdownOpen] = useState(false);
   const [isDataManagementDropdownOpen, setIsDataManagementDropdownOpen] = useState(false);
-
-  // Offline-only mode toggle state (allows uninterrupted offline usage anytime)
-  const [offlineOnlyMode, setOfflineOnlyState] = useState<boolean>(getOfflineOnlyMode);
-
-  useEffect(() => {
-    const onOfflineChange = (e: Event) => {
-      const customEvent = e as CustomEvent<{ enabled: boolean }>;
-      if (customEvent.detail && typeof customEvent.detail.enabled === 'boolean') {
-        setOfflineOnlyState(customEvent.detail.enabled);
-      } else {
-        setOfflineOnlyState(getOfflineOnlyMode());
-      }
-    };
-    window.addEventListener('offline_mode_changed', onOfflineChange);
-    return () => window.removeEventListener('offline_mode_changed', onOfflineChange);
-  }, []);
-
-  const handleToggleOfflineOnly = () => {
-    const next = !offlineOnlyMode;
-    setOfflineOnlyMode(next);
-    setOfflineOnlyState(next);
-  };
 
   const handleSelectCalculatorType = (calc: FinancialCalculatorType) => {
     setSelectedCalculator(calc);
@@ -376,56 +352,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <div
               className={`w-5 h-5 rounded-full bg-white shadow-xs transition-transform transform ${
                 soundEnabled ? 'translate-x-5' : 'translate-x-0'
-              }`}
-            />
-          </div>
-        </button>
-
-        {/* Offline Mode Actionable Card */}
-        <button
-          id="btn-toggle-offline-mode-settings"
-          type="button"
-          onClick={handleToggleOfflineOnly}
-          className={`w-full p-4 sm:p-5 rounded-2xl bg-white dark:bg-stone-900 border shadow-xs hover:shadow-sm flex items-center justify-between gap-3 transition active:scale-[0.99] cursor-pointer text-left group ${
-            offlineOnlyMode
-              ? 'border-emerald-300 dark:border-emerald-800/80 hover:border-emerald-400 dark:hover:border-emerald-700'
-              : 'border-stone-200 dark:border-stone-800 hover:border-stone-300 dark:hover:border-stone-700'
-          }`}
-        >
-          <div className="flex items-center gap-3 min-w-0">
-            <div
-              className={`p-2.5 rounded-xl shrink-0 transition-colors ${
-                offlineOnlyMode
-                  ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300'
-                  : 'bg-stone-100 dark:bg-stone-800 text-stone-500 dark:text-stone-400'
-              }`}
-            >
-              <WifiOff className="w-5 h-5" />
-            </div>
-            <div className="flex items-center gap-2 flex-wrap min-w-0">
-              <span className="text-sm font-bold text-stone-900 dark:text-white truncate">
-                Offline Mode
-              </span>
-              <span
-                className={`text-[10px] font-bold px-2 py-0.5 rounded-full transition-colors ${
-                  offlineOnlyMode
-                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                    : 'bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-400'
-                }`}
-              >
-                {offlineOnlyMode ? 'On' : 'Off'}
-              </span>
-            </div>
-          </div>
-
-          <div
-            className={`w-11 h-6 rounded-full transition-colors p-0.5 flex items-center shrink-0 ${
-              offlineOnlyMode ? 'bg-emerald-600' : 'bg-stone-300 dark:bg-stone-700'
-            }`}
-          >
-            <div
-              className={`w-5 h-5 rounded-full bg-white shadow-xs transition-transform transform ${
-                offlineOnlyMode ? 'translate-x-5' : 'translate-x-0'
               }`}
             />
           </div>

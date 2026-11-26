@@ -1,11 +1,18 @@
 User-agent: Mediapartners-Google
 Allow: /
 
+User-agent: AdsBot-Google
+Allow: /
+
+User-agent: AdsBot-Google-Mobile
+Allow: /
+
 User-agent: Google-Display-Ads-Bot
+Allow: /
+
+User-agent: Googlebot
 Allow: /
 
 User-agent: *
 Allow: /
 Disallow: /api/
-
-Sitemap: https://currency-counter.ai.studio/sitemap.xml

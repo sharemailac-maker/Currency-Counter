@@ -137,17 +137,10 @@ export function safeNumber(val: unknown, fallback = 0, min = 0, max = 1e15): num
  */
 export function initClientSecurityShield(): void {
   try {
-    // Prevent malicious scripts or browser extensions from tampering with standard prototypes
+    // Prevent malicious scripts or browser extensions from tampering with __proto__
     Object.freeze(Object.getOwnPropertyDescriptor(Object.prototype, '__proto__'));
   } catch {
     // Non-fatal if runtime has frozen prototypes already
-  }
-
-  try {
-    // Prevent overriding of critical object prototypes
-    Object.seal(Object.prototype);
-  } catch {
-    // Non-fatal if already sealed
   }
 }
 
