@@ -34,7 +34,7 @@ function lazyWithRetry<T extends React.ComponentType<any>>(
   });
 }
 
-const EarthGlobeLanding = lazyWithRetry(() => import('./components/EarthGlobeLanding'));
+import EarthGlobeLanding from './components/EarthGlobeLanding';
 const HistoryView = lazyWithRetry(() => import('./components/HistoryView'));
 const ConversionView = lazyWithRetry(() => import('./components/ConversionView'));
 const SettingsView = lazyWithRetry(() => import('./components/SettingsView'));
@@ -46,26 +46,6 @@ const SaveTallyDialog = lazyWithRetry(() => import('./components/SaveTallyDialog
 const ResetConfirmModal = lazyWithRetry(() => import('./components/ResetConfirmModal'));
 const DeleteConfirmModal = lazyWithRetry(() => import('./components/DeleteConfirmModal'));
 const FeedbackModal = lazyWithRetry(() => import('./components/FeedbackModal'));
-
-function GlobeLoadingSkeleton() {
-  return (
-    <div className="flex-1 flex flex-col items-center justify-center p-6 bg-stone-950 text-white min-h-[75vh]">
-      <div className="relative w-44 h-44 sm:w-60 sm:h-60 flex items-center justify-center mb-6">
-        <div className="absolute inset-0 rounded-full bg-emerald-500/20 blur-xl animate-pulse" />
-        <div className="w-36 h-36 sm:w-48 sm:h-48 rounded-full border-2 border-emerald-500/30 border-t-emerald-400 animate-spin flex items-center justify-center">
-          <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-full border border-teal-500/20 border-b-teal-400 animate-spin [animation-direction:reverse]" />
-        </div>
-        <div className="absolute flex flex-col items-center justify-center">
-          <span className="text-4xl select-none">🌍</span>
-        </div>
-      </div>
-      <div className="text-center space-y-1.5">
-        <h2 className="text-base font-bold text-emerald-400 tracking-wide">Currency Counter</h2>
-        <p className="text-xs text-stone-400">Loading fast offline cash counter...</p>
-      </div>
-    </div>
-  );
-}
 
 function ViewLoadingSkeleton() {
   return (
@@ -542,14 +522,12 @@ export default function App() {
       {/* TAB 1: HOME (Interactive Circular Earth Globe & Alphabetical Country Launcher) */}
       {currentTab === 'home' && (
         <div className="pb-16 flex-1 flex flex-col">
-          <Suspense fallback={<GlobeLoadingSkeleton />}>
-            <EarthGlobeLanding
-              selectedCountry={selectedCountry}
-              onSelectCountryAndLaunch={handleSelectCountryFromEarth}
-              onResumeCalculator={() => setCurrentTab('counter')}
-              hasExistingCounts={hasCounts}
-            />
-          </Suspense>
+          <EarthGlobeLanding
+            selectedCountry={selectedCountry}
+            onSelectCountryAndLaunch={handleSelectCountryFromEarth}
+            onResumeCalculator={() => setCurrentTab('counter')}
+            hasExistingCounts={hasCounts}
+          />
         </div>
       )}
 

@@ -156,12 +156,13 @@ async function startServer() {
     res.setHeader(
       'Content-Security-Policy',
       "default-src 'self'; " +
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://*.googletagmanager.com https://tagmanager.google.com https://www.google-analytics.com https://*.google-analytics.com https://*.google.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.doubleclick.net https://*.googleadservices.com https://*.adtrafficquality.google https://*.gstatic.com https://fundingchoicesmessages.google.com; " +
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://www.googletagmanager.com https://*.googletagmanager.com https://tagmanager.google.com https://www.google-analytics.com https://*.google-analytics.com https://*.google.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.doubleclick.net https://*.googleadservices.com https://*.adtrafficquality.google https://*.gstatic.com https://fundingchoicesmessages.google.com; " +
+      "worker-src 'self' blob:; " +
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.googletagmanager.com https://tagmanager.google.com https://*.googlesyndication.com https://*.doubleclick.net https://fundingchoicesmessages.google.com https://*.gstatic.com; " +
       "font-src 'self' data: https://fonts.gstatic.com https://*.gstatic.com; " +
       "img-src 'self' data: blob: https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://*.googletagmanager.com https://*.analytics.google.com https://analytics.google.com https://stats.g.doubleclick.net https://*.g.doubleclick.net https://*.google.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.doubleclick.net https://*.googleadservices.com https://*.adtrafficquality.google https://*.gstatic.com https://fundingchoicesmessages.google.com; " +
       "connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://*.googletagmanager.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://*.g.doubleclick.net https://*.google.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.doubleclick.net https://*.googleadservices.com https://*.adtrafficquality.google https://fundingchoicesmessages.google.com https://*.gstatic.com; " +
-      "frame-src 'self' https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.doubleclick.net https://*.google.com https://*.adtrafficquality.google https://fundingchoicesmessages.google.com; " +
+      "frame-src 'self' https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.doubleclick.net https://*.google.com https://*.googleadservices.com https://*.adtrafficquality.google https://fundingchoicesmessages.google.com; " +
       "frame-ancestors 'self' https://ai.studio https://*.google.com https://*.googleusercontent.com https://*.run.app https://*.googlesyndication.com https://*.doubleclick.net; " +
       "object-src 'none'; " +
       "base-uri 'self'; " +
@@ -335,12 +336,18 @@ async function startServer() {
     res.json({ totalHits: memoryHitCount, anonymous: true, success: true });
   });
 
-  // Google AdSense Authorized Digital Sellers (/ads.txt)
-  app.get('/ads.txt', (req: Request, res: Response) => {
+  // Google AdSense Authorized Digital Sellers (/ads.txt & /app-ads.txt)
+  app.get(['/ads.txt', '/app-ads.txt'], (req: Request, res: Response) => {
     res.type('text/plain; charset=utf-8');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Cache-Control', 'public, max-age=3600');
     res.send('google.com, pub-4754025584591104, DIRECT, f08c47fec0942fa0\n');
+  });
+
+  // Serve favicon.ico as PNG icon cleanly instead of SPA HTML fallback
+  app.get('/favicon.ico', (req: Request, res: Response) => {
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.sendFile(path.join(process.cwd(), 'public', 'app-icon.png'));
   });
 
   function getSafeRequestOrigin(req: Request): string {
@@ -557,8 +564,10 @@ async function startServer() {
       res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
       if (filePath.includes(`${path.sep}assets${path.sep}`)) {
         res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-      } else if (filePath.endsWith('.html') || filePath.endsWith(`${path.sep}sw.js`)) {
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      } else if (filePath.endsWith(`${path.sep}sw.js`)) {
+        res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+      } else if (filePath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
       }
     },
   };
@@ -581,7 +590,7 @@ async function startServer() {
         res.status(404).end();
         return;
       }
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
       if (cachedIndexHtml) {
         res.type('text/html; charset=utf-8').send(cachedIndexHtml);
         return;

@@ -124,6 +124,7 @@ export const EarthGlobeLanding: React.FC<EarthGlobeLandingProps> = ({
 
   // List modal state
   const [isListModalOpen, setIsListModalOpen] = useState(false);
+  const [webglUnavailable, setWebglUnavailable] = useState(false);
 
   // Auto rotation state mirrored in ref so WebGL scene never tears down on toggle
   const [isAutoRotating, setIsAutoRotating] = useState(true);
@@ -257,6 +258,20 @@ export const EarthGlobeLanding: React.FC<EarthGlobeLandingProps> = ({
     threeState.current.targetCameraDistance = initialDistance;
     threeState.current.defaultDistance = initialDistance;
 
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({
+        canvas,
+        antialias: true,
+        alpha: true,
+        powerPreference: 'high-performance',
+      });
+    } catch (err) {
+      console.warn('WebGL unavailable, enabling 2D globe fallback:', err);
+      setWebglUnavailable(true);
+      return;
+    }
+
     // 1. Scene
     const scene = new THREE.Scene();
     threeState.current.scene = scene;
@@ -266,13 +281,7 @@ export const EarthGlobeLanding: React.FC<EarthGlobeLandingProps> = ({
     camera.position.set(0, 0, initialDistance);
     threeState.current.camera = camera;
 
-    // 3. Renderer
-    const renderer = new THREE.WebGLRenderer({
-      canvas,
-      antialias: true,
-      alpha: true,
-      powerPreference: 'high-performance',
-    });
+    // 3. Renderer configuration
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -734,18 +743,35 @@ export const EarthGlobeLanding: React.FC<EarthGlobeLandingProps> = ({
         </button>
       </div>
 
-      {/* 3. Three.js Canvas Container & Country Pins */}
+      {/* 3. Three.js Canvas Container & Country Pins (with graceful 2D fallback if WebGL is unavailable) */}
       <div
         ref={containerRef}
         id="earth-globe-canvas-wrapper"
         className="absolute inset-0 z-10 w-full h-full cursor-grab active:cursor-grabbing touch-none overscroll-none"
         style={{ touchAction: 'none', overscrollBehavior: 'none' }}
       >
-        <canvas
-          ref={canvasRef}
-          className="w-full h-full block touch-none overscroll-none"
-          style={{ touchAction: 'none', overscrollBehavior: 'none' }}
-        />
+        {webglUnavailable ? (
+          <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center">
+            <div className="w-52 h-52 sm:w-64 sm:h-64 rounded-full bg-[radial-gradient(circle_at_35%_30%,#0ea5e9_0%,#0369a1_38%,#064e3b_72%,#020617_100%)] border border-cyan-400/35 shadow-[0_0_70px_rgba(16,185,129,0.3)] flex flex-col items-center justify-center p-5">
+              <Globe className="w-12 h-12 text-emerald-300 mb-2" />
+              <div className="text-sm font-extrabold text-white">{activeCountry.flag} {activeCountry.countryName}</div>
+              <div className="text-xs font-mono text-emerald-300 mb-3">{activeCountry.currencyCode} ({activeCountry.currencySymbol})</div>
+              <button
+                type="button"
+                onClick={() => handlePinDoubleClick(activeCountry)}
+                className="interactive-control px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-stone-950 text-xs font-black transition cursor-pointer"
+              >
+                Open Cash Counter
+              </button>
+            </div>
+          </div>
+        ) : (
+          <canvas
+            ref={canvasRef}
+            className="w-full h-full block touch-none overscroll-none"
+            style={{ touchAction: 'none', overscrollBehavior: 'none' }}
+          />
+        )}
 
         {/* 4. Overlay: Pinpoint & Currency Symbols for all supported countries */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
